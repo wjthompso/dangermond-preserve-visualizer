@@ -19,21 +19,21 @@ interface WellVisualizationProps {
 }
 
 const lithologyColors: Record<string, string> = {
-    "unconsolidated-coarse-grained": "bg-orange-700",
-    "unconsolidated-mostly-coarse-grained": "bg-orange-600",
-    "unconsolidated-coarse-and-fine-grained": "bg-orange-500",
-    "unconsolidated-mostly-fine-grained": "bg-orange-400",
-    "unconsolidated-fine-grained": "bg-orange-300",
-    "sedimentary-coarse-grained": "bg-blue-700",
-    "sedimentary-mostly-coarse-grained": "bg-blue-600",
-    "sedimentary-coarse-and-fine-grained": "bg-blue-500",
-    "sedimentary-mostly-fine-grained": "bg-blue-400",
-    "sedimentary-fine-grained": "bg-blue-300",
-    "other-till": "bg-pink-600",
-    "other-carbonate": "bg-cyan-500",
-    "other-volcanic": "bg-green-500",
-    "other-evaporite": "bg-yellow-500",
-    "other-endogenous": "bg-purple-600",
+    "unconsolidated-coarse-grained": "bg-[#391600]",
+    "unconsolidated-mostly-coarse-grained": "bg-[#5A2300]",
+    "unconsolidated-coarse-and-fine-grained": "bg-[#9E3D01]",
+    "unconsolidated-mostly-fine-grained": "bg-[#D75300]",
+    "unconsolidated-fine-grained": "bg-[#FF7E4F]",
+    "sedimentary-coarse-grained": "bg-[#141414]",
+    "sedimentary-mostly-coarse-grained": "bg-[#2F2F2F]",
+    "sedimentary-coarse-and-fine-grained": "bg-[#616161]",
+    "sedimentary-mostly-fine-grained": "bg-[#9A9A9A]",
+    "sedimentary-fine-grained": "bg-[#D5D5D5]",
+    "other-till": "bg-[#FF0084]",
+    "other-carbonate": "bg-[#41FDFE]",
+    "other-volcanic": "bg-[#45BE44]",
+    "other-evaporite": "bg-[#F8E627]",
+    "other-endogenous": "bg-[#884B9E]",
 };
 
 const lithologyLegend: LithologyLegendItem[] = [
@@ -127,13 +127,16 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
 }) => {
     const [hoveredType, setHoveredType] = useState<string | null>(null);
 
+    const hoveredGroup = hoveredType
+        ? lithologyLegend.find((item) => item.type === hoveredType)?.group
+        : null;
+
     const interval = calculateLabelIntervals(maxDepth);
     const labels = Array.from(
         { length: Math.ceil(maxDepth / interval) + 1 },
         (_, i) => i * interval
     );
 
-    // Group legend items by their `group` property
     const groupedLegend = lithologyLegend.reduce<
         Record<string, LithologyLegendItem[]>
     >((acc, item) => {
@@ -175,10 +178,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                 key={index}
                                 className={`relative ${
                                     lithologyColors[layer.type]
-                                } flex-grow transition-opacity duration-300 ${
+                                } flex-grow transition-all duration-300 ${
                                     hoveredType && hoveredType !== layer.type
-                                        ? "opacity-20"
-                                        : "opacity-200"
+                                        ? "opacity-10"
+                                        : "opacity-100"
                                 }`}
                                 onMouseEnter={() => setHoveredType(layer.type)}
                                 onMouseLeave={() => setHoveredType(null)}
@@ -188,6 +191,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         "url('/assets/rock-texture-semi-transparent-overlay.png')",
                                     backgroundSize: "cover",
                                     backgroundBlendMode: "overlay",
+                                    border:
+                                        hoveredType === layer.type
+                                            ? "1px solid white"
+                                            : "none",
                                 }}
                             ></div>
                         );
@@ -230,7 +237,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                             <div className="w-full text-sm font-medium text-center text-[#B4D9FF]">
                                 {waterLevel} ft
                             </div>
-                            <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#B4D9FF] rounded-sm"></div>
+                            <div
+                                id="indicator-triangle"
+                                className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#B4D9FF] rounded-sm"
+                            ></div>
                         </div>
                     </div>
                 </div>
@@ -245,9 +255,9 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                 key={index}
                                 className={`relative ${
                                     lithologyColors[layer.type]
-                                } flex-grow transition-opacity duration-300 ${
+                                } flex-grow transition-all duration-300 ${
                                     hoveredType && hoveredType !== layer.type
-                                        ? "opacity-20"
+                                        ? "opacity-10"
                                         : "opacity-100"
                                 }`}
                                 onMouseEnter={() => setHoveredType(layer.type)}
@@ -258,6 +268,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         "url('/assets/rock-texture-semi-transparent-overlay.png')",
                                     backgroundSize: "cover",
                                     backgroundBlendMode: "overlay",
+                                    border:
+                                        hoveredType === layer.type
+                                            ? "1px solid white"
+                                            : "none",
                                 }}
                             ></div>
                         );
@@ -268,7 +282,14 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
             {/* Legend */}
             <div className="flex flex-col w-[180px] space-y-4 -mt-2 ml-2">
                 {Object.entries(groupedLegend).map(([group, items]) => (
-                    <div key={group}>
+                    <div
+                        key={group}
+                        className={`transition-opacity duration-300 ${
+                            hoveredGroup && hoveredGroup !== group
+                                ? "opacity-10"
+                                : "opacity-100"
+                        }`}
+                    >
                         <div className="mb-1 text-lg font-medium text-white">
                             {group}
                         </div>
@@ -278,16 +299,16 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                     key={item.type}
                                     className={`flex items-center space-x-2 transition-opacity duration-300 ${
                                         hoveredType && hoveredType !== item.type
-                                            ? "opacity-20"
+                                            ? "opacity-10"
                                             : "opacity-100"
                                     }`}
                                 >
                                     <div
-                                        className={`w-4 h-4 rounded border-[0.6px] border-solid border-[#808080] border-inside ${
+                                        className={`w-4 h-4 rounded border-[1px] border-[#808080] ${
                                             lithologyColors[item.type]
                                         }`}
                                     ></div>
-                                    <div className="text-xs text-gray-200">
+                                    <div className="text-xs font-medium text-gray-200">
                                         {item.label}
                                     </div>
                                 </div>
