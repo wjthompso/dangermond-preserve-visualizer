@@ -41,7 +41,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
     );
 
     return (
-        <div className="flex items-center justify-center h-[615px] w-[150px] relative">
+        <div className="flex items-center justify-center h-[615px] w-[150px] relative mt-4">
             {/* Y-Axis Labels */}
             <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col-reverse text-gray-400 text-[11px] -ml-2">
                 {labels.map((label, index) => (
@@ -83,6 +83,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
 
             {/* Water Level */}
             <div className="relative flex flex-col-reverse w-[4rem] h-full overflow-hidden">
+                {/* Water Rectangle */}
                 <div
                     className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden"
                     style={{
@@ -100,6 +101,26 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                             backgroundPosition: "top",
                         }}
                     ></div>
+                </div>
+
+                {/* Floating Water Level Indicator */}
+                <div
+                    className="absolute w-full -translate-x-1/2 left-1/2"
+                    style={{
+                        bottom: `calc(${(waterLevel / maxDepth) * 100}% + 5px)`,
+                    }}
+                >
+                    <div
+                        id="water-level-indicator"
+                        className="flex flex-col items-center w-full"
+                    >
+                        {/* Water Level Text */}
+                        <div className="w-full text-sm font-medium text-center text-[#B4D9FF]">
+                            {waterLevel} ft
+                        </div>
+                        {/* Triangle Indicator */}
+                        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#B4D9FF] rounded-sm"></div>
+                    </div>
                 </div>
             </div>
 
