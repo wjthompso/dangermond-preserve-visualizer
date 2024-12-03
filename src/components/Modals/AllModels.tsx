@@ -26,7 +26,7 @@ const AllModels: React.FC = () => {
                             },
                             { startDepth: 200, endDepth: 300, type: "other" },
                         ]}
-                        waterLevel={150}
+                        waterLevel={200}
                         maxDepth={300}
                     />
                 </div>

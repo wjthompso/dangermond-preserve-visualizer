@@ -85,7 +85,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
             <div className="relative flex flex-col-reverse w-[4rem] h-full overflow-hidden">
                 {/* Water Rectangle */}
                 <div
-                    className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden"
+                    className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
                     style={{
                         height: `${(waterLevel / maxDepth) * 100}%`,
                     }}
@@ -105,7 +105,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
 
                 {/* Floating Water Level Indicator */}
                 <div
-                    className="absolute w-full -translate-x-1/2 left-1/2"
+                    className="absolute w-full transition-all duration-700 ease-in-out -translate-x-1/2 left-1/2"
                     style={{
                         bottom: `calc(${(waterLevel / maxDepth) * 100}% + 5px)`,
                     }}
