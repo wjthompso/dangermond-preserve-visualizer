@@ -18,13 +18,46 @@ const lithologyColors: Record<string, string> = {
     other: "bg-gray-500",
 };
 
+const calculateLabelIntervals = (maxDepth: number, maxLabels: number = 16) => {
+    // Determine the interval that results in ~16 labels
+    const possibleIntervals = [5, 10, 50, 100];
+    for (let interval of possibleIntervals) {
+        if (Math.ceil(maxDepth / interval) <= maxLabels) {
+            return interval;
+        }
+    }
+    return 100; // Default to 100 if no smaller interval works
+};
+
 const WellVisualization: React.FC<WellVisualizationProps> = ({
     layers,
     waterLevel,
     maxDepth,
 }) => {
+    const interval = calculateLabelIntervals(maxDepth);
+    const labels = Array.from(
+        { length: Math.ceil(maxDepth / interval) + 1 },
+        (_, i) => i * interval
+    );
+
     return (
-        <div className="flex items-center justify-center h-[615px] w-[120px] relative">
+        <div className="flex items-center justify-center h-[615px] w-[150px] relative">
+            {/* Y-Axis Labels */}
+            <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col-reverse text-gray-400 text-[11px] -ml-2">
+                {labels.map((label, index) => (
+                    <div
+                        key={index}
+                        className="absolute right-0 text-right"
+                        style={{
+                            bottom: `${(label / maxDepth) * 100}%`,
+                            transform: "translateY(50%)", // Center vertically
+                        }}
+                    >
+                        {label}
+                    </div>
+                ))}
+            </div>
+
             {/* Left Lithology Layers */}
             <div className="relative flex flex-col w-[1rem] h-full">
                 {layers.map((layer, index) => {
@@ -61,10 +94,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                         className="absolute inset-0 mx-1 mt-1"
                         style={{
                             backgroundImage:
-                                "url('/assets/Air Bubbles In Water.svg')", // Path to SVG
-                            backgroundSize: "100% auto", // Fill width, maintain aspect ratio
-                            backgroundRepeat: "repeat-y", // Repeat vertically
-                            backgroundPosition: "top", // Align bubbles at the top
+                                "url('/assets/Air Bubbles In Water.svg')",
+                            backgroundSize: "100% auto",
+                            backgroundRepeat: "repeat-y",
+                            backgroundPosition: "top",
                         }}
                     ></div>
                 </div>
