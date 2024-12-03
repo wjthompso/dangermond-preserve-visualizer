@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface LithologyLayer {
     startDepth: number;
     endDepth: number;
-    type: string; // Example: 'unconsolidated', 'sedimentary', etc.
+    type: string; // Unique identifier for the lithology layer
+}
+
+interface LithologyLegendItem {
+    type: string; // Unique identifier
+    label: string; // Display label for the legend
+    group: string; // Group the item belongs to (e.g., "Unconsolidated")
 }
 
 interface WellVisualizationProps {
@@ -13,13 +19,98 @@ interface WellVisualizationProps {
 }
 
 const lithologyColors: Record<string, string> = {
-    unconsolidated: "bg-orange-600",
-    sedimentary: "bg-blue-500",
-    other: "bg-gray-500",
+    "unconsolidated-coarse-grained": "bg-orange-700",
+    "unconsolidated-mostly-coarse-grained": "bg-orange-600",
+    "unconsolidated-coarse-and-fine-grained": "bg-orange-500",
+    "unconsolidated-mostly-fine-grained": "bg-orange-400",
+    "unconsolidated-fine-grained": "bg-orange-300",
+    "sedimentary-coarse-grained": "bg-blue-700",
+    "sedimentary-mostly-coarse-grained": "bg-blue-600",
+    "sedimentary-coarse-and-fine-grained": "bg-blue-500",
+    "sedimentary-mostly-fine-grained": "bg-blue-400",
+    "sedimentary-fine-grained": "bg-blue-300",
+    "other-till": "bg-pink-600",
+    "other-carbonate": "bg-cyan-500",
+    "other-volcanic": "bg-green-500",
+    "other-evaporite": "bg-yellow-500",
+    "other-endogenous": "bg-purple-600",
 };
 
+const lithologyLegend: LithologyLegendItem[] = [
+    {
+        type: "unconsolidated-coarse-grained",
+        label: "Coarse-grained",
+        group: "Unconsolidated",
+    },
+    {
+        type: "unconsolidated-mostly-coarse-grained",
+        label: "Mostly coarse-grained",
+        group: "Unconsolidated",
+    },
+    {
+        type: "unconsolidated-coarse-and-fine-grained",
+        label: "Coarse- and fine-grained",
+        group: "Unconsolidated",
+    },
+    {
+        type: "unconsolidated-mostly-fine-grained",
+        label: "Mostly fine-grained",
+        group: "Unconsolidated",
+    },
+    {
+        type: "unconsolidated-fine-grained",
+        label: "Fine-grained",
+        group: "Unconsolidated",
+    },
+    {
+        type: "sedimentary-coarse-grained",
+        label: "Coarse-grained",
+        group: "Clastic sedimentary",
+    },
+    {
+        type: "sedimentary-mostly-coarse-grained",
+        label: "Mostly coarse-grained",
+        group: "Clastic sedimentary",
+    },
+    {
+        type: "sedimentary-coarse-and-fine-grained",
+        label: "Coarse- and fine-grained",
+        group: "Clastic sedimentary",
+    },
+    {
+        type: "sedimentary-mostly-fine-grained",
+        label: "Mostly fine-grained",
+        group: "Clastic sedimentary",
+    },
+    {
+        type: "sedimentary-fine-grained",
+        label: "Fine-grained",
+        group: "Clastic sedimentary",
+    },
+    { type: "other-till", label: "Till", group: "Other" },
+    {
+        type: "other-carbonate",
+        label: "Carbonate (e.g., limestone)",
+        group: "Other",
+    },
+    {
+        type: "other-volcanic",
+        label: "Volcanic (e.g., basalt)",
+        group: "Other",
+    },
+    {
+        type: "other-evaporite",
+        label: "Evaporite (e.g., gypsum)",
+        group: "Other",
+    },
+    {
+        type: "other-endogenous",
+        label: "Endogenous (e.g., granite)",
+        group: "Other",
+    },
+];
+
 const calculateLabelIntervals = (maxDepth: number, maxLabels: number = 16) => {
-    // Determine the interval that results in ~16 labels
     const possibleIntervals = [5, 10, 50, 100];
     for (let interval of possibleIntervals) {
         if (Math.ceil(maxDepth / interval) <= maxLabels) {
@@ -34,117 +125,176 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
     waterLevel,
     maxDepth,
 }) => {
+    const [hoveredType, setHoveredType] = useState<string | null>(null);
+
     const interval = calculateLabelIntervals(maxDepth);
     const labels = Array.from(
         { length: Math.ceil(maxDepth / interval) + 1 },
         (_, i) => i * interval
     );
 
+    // Group legend items by their `group` property
+    const groupedLegend = lithologyLegend.reduce<
+        Record<string, LithologyLegendItem[]>
+    >((acc, item) => {
+        if (!acc[item.group]) acc[item.group] = [];
+        acc[item.group].push(item);
+        return acc;
+    }, {});
+
     return (
-        <div className="flex items-center justify-center h-[615px] w-[150px] relative mt-4">
-            {/* Y-Axis Labels */}
-            <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col-reverse text-gray-400 text-[11px] -ml-2">
-                {labels.map((label, index) => (
+        <div className="flex items-start justify-center pl-4">
+            {/* Well Visualization */}
+            <div
+                id="water-level-visualization-graphic"
+                className="flex items-center justify-center h-[615px] w-[100px] relative"
+            >
+                {/* Y-Axis Labels */}
+                <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col-reverse text-gray-400 text-[11px] -ml-6">
+                    {labels.map((label, index) => (
+                        <div
+                            key={index}
+                            className="absolute right-0 text-right"
+                            style={{
+                                bottom: `${(label / maxDepth) * 100}%`,
+                                transform: "translateY(50%)",
+                            }}
+                        >
+                            {label}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Left Lithology Layers */}
+                <div className="relative flex flex-col w-[0.875rem] h-full">
+                    {layers.map((layer, index) => {
+                        const heightFraction =
+                            (layer.endDepth - layer.startDepth) / maxDepth;
+                        return (
+                            <div
+                                key={index}
+                                className={`relative ${
+                                    lithologyColors[layer.type]
+                                } flex-grow transition-opacity duration-300 ${
+                                    hoveredType && hoveredType !== layer.type
+                                        ? "opacity-20"
+                                        : "opacity-200"
+                                }`}
+                                onMouseEnter={() => setHoveredType(layer.type)}
+                                onMouseLeave={() => setHoveredType(null)}
+                                style={{
+                                    flexGrow: heightFraction,
+                                    backgroundImage:
+                                        "url('/assets/rock-texture-semi-transparent-overlay.png')",
+                                    backgroundSize: "cover",
+                                    backgroundBlendMode: "overlay",
+                                }}
+                            ></div>
+                        );
+                    })}
+                </div>
+
+                {/* Water Level */}
+                <div className="relative flex flex-col-reverse w-[3.2rem] h-full overflow-hidden">
                     <div
-                        key={index}
-                        className="absolute right-0 text-right"
+                        className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
                         style={{
-                            bottom: `${(label / maxDepth) * 100}%`,
-                            transform: "translateY(50%)", // Center vertically
+                            height: `${(waterLevel / maxDepth) * 100}%`,
                         }}
                     >
-                        {label}
+                        <div
+                            className="absolute inset-0 mx-1 mt-1"
+                            style={{
+                                backgroundImage:
+                                    "url('/assets/Air Bubbles In Water.svg')",
+                                backgroundSize: "100% auto",
+                                backgroundRepeat: "repeat-y",
+                                backgroundPosition: "top",
+                            }}
+                        ></div>
+                    </div>
+
+                    {/* Floating Water Level Indicator */}
+                    <div
+                        className="absolute w-full transition-all duration-700 ease-in-out -translate-x-1/2 left-1/2"
+                        style={{
+                            bottom: `calc(${
+                                (waterLevel / maxDepth) * 100
+                            }% + 5px)`,
+                        }}
+                    >
+                        <div
+                            id="water-level-indicator"
+                            className="flex flex-col items-center w-full"
+                        >
+                            <div className="w-full text-sm font-medium text-center text-[#B4D9FF]">
+                                {waterLevel} ft
+                            </div>
+                            <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#B4D9FF] rounded-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Lithology Layers */}
+                <div className="relative flex flex-col w-[0.875rem] h-full">
+                    {layers.map((layer, index) => {
+                        const heightFraction =
+                            (layer.endDepth - layer.startDepth) / maxDepth;
+                        return (
+                            <div
+                                key={index}
+                                className={`relative ${
+                                    lithologyColors[layer.type]
+                                } flex-grow transition-opacity duration-300 ${
+                                    hoveredType && hoveredType !== layer.type
+                                        ? "opacity-20"
+                                        : "opacity-100"
+                                }`}
+                                onMouseEnter={() => setHoveredType(layer.type)}
+                                onMouseLeave={() => setHoveredType(null)}
+                                style={{
+                                    flexGrow: heightFraction,
+                                    backgroundImage:
+                                        "url('/assets/rock-texture-semi-transparent-overlay.png')",
+                                    backgroundSize: "cover",
+                                    backgroundBlendMode: "overlay",
+                                }}
+                            ></div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-col w-[180px] space-y-4 -mt-2 ml-2">
+                {Object.entries(groupedLegend).map(([group, items]) => (
+                    <div key={group}>
+                        <div className="mb-1 text-lg font-medium text-white">
+                            {group}
+                        </div>
+                        <div className="space-y-1">
+                            {items.map((item) => (
+                                <div
+                                    key={item.type}
+                                    className={`flex items-center space-x-2 transition-opacity duration-300 ${
+                                        hoveredType && hoveredType !== item.type
+                                            ? "opacity-20"
+                                            : "opacity-100"
+                                    }`}
+                                >
+                                    <div
+                                        className={`w-4 h-4 rounded border-[0.6px] border-solid border-[#808080] border-inside ${
+                                            lithologyColors[item.type]
+                                        }`}
+                                    ></div>
+                                    <div className="text-xs text-gray-200">
+                                        {item.label}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ))}
-            </div>
-
-            {/* Left Lithology Layers */}
-            <div className="relative flex flex-col w-[1rem] h-full">
-                {layers.map((layer, index) => {
-                    const heightFraction =
-                        (layer.endDepth - layer.startDepth) / maxDepth;
-                    return (
-                        <div
-                            key={index}
-                            className={`relative ${
-                                lithologyColors[layer.type]
-                            } flex-grow`}
-                            style={{
-                                flexGrow: heightFraction,
-                                backgroundImage:
-                                    "url('/assets/rock-texture-semi-transparent-overlay.png')",
-                                backgroundSize: "cover",
-                                backgroundBlendMode: "overlay",
-                            }}
-                        ></div>
-                    );
-                })}
-            </div>
-
-            {/* Water Level */}
-            <div className="relative flex flex-col-reverse w-[4rem] h-full overflow-hidden">
-                {/* Water Rectangle */}
-                <div
-                    className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
-                    style={{
-                        height: `${(waterLevel / maxDepth) * 100}%`,
-                    }}
-                >
-                    {/* Bubbles Overlay */}
-                    <div
-                        className="absolute inset-0 mx-1 mt-1"
-                        style={{
-                            backgroundImage:
-                                "url('/assets/Air Bubbles In Water.svg')",
-                            backgroundSize: "100% auto",
-                            backgroundRepeat: "repeat-y",
-                            backgroundPosition: "top",
-                        }}
-                    ></div>
-                </div>
-
-                {/* Floating Water Level Indicator */}
-                <div
-                    className="absolute w-full transition-all duration-700 ease-in-out -translate-x-1/2 left-1/2"
-                    style={{
-                        bottom: `calc(${(waterLevel / maxDepth) * 100}% + 5px)`,
-                    }}
-                >
-                    <div
-                        id="water-level-indicator"
-                        className="flex flex-col items-center w-full"
-                    >
-                        {/* Water Level Text */}
-                        <div className="w-full text-sm font-medium text-center text-[#B4D9FF]">
-                            {waterLevel} ft
-                        </div>
-                        {/* Triangle Indicator */}
-                        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[12px] border-t-[#B4D9FF] rounded-sm"></div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Lithology Layers */}
-            <div className="relative flex flex-col w-[1rem] h-full">
-                {layers.map((layer, index) => {
-                    const heightFraction =
-                        (layer.endDepth - layer.startDepth) / maxDepth;
-                    return (
-                        <div
-                            key={index}
-                            className={`relative ${
-                                lithologyColors[layer.type]
-                            } flex-grow`}
-                            style={{
-                                flexGrow: heightFraction,
-                                backgroundImage:
-                                    "url('/assets/rock-texture-semi-transparent-overlay.png')",
-                                backgroundSize: "cover",
-                                backgroundBlendMode: "overlay",
-                            }}
-                        ></div>
-                    );
-                })}
             </div>
         </div>
     );

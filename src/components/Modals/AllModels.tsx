@@ -17,16 +17,20 @@ const AllModels: React.FC = () => {
                             {
                                 startDepth: 0,
                                 endDepth: 100,
-                                type: "unconsolidated",
+                                type: "unconsolidated-coarse-grained",
                             },
                             {
                                 startDepth: 100,
                                 endDepth: 200,
-                                type: "sedimentary",
+                                type: "sedimentary-coarse-and-fine-grained",
                             },
-                            { startDepth: 200, endDepth: 300, type: "other" },
+                            {
+                                startDepth: 200,
+                                endDepth: 300,
+                                type: "unconsolidated-mostly-fine-grained",
+                            },
                         ]}
-                        waterLevel={200}
+                        waterLevel={210}
                         maxDepth={300}
                     />
                 </div>
