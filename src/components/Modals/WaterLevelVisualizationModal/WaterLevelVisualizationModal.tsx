@@ -25,7 +25,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
 }) => {
     return (
         <div className="flex items-center justify-center h-[615px] w-[120px] relative">
-            {/* Lithology Layers */}
+            {/* Left Lithology Layers */}
             <div className="relative flex flex-col w-[1rem] h-full">
                 {layers.map((layer, index) => {
                     const heightFraction =
@@ -49,18 +49,28 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
             </div>
 
             {/* Water Level */}
-            <div className="relative flex flex-col-reverse w-[4rem] h-full">
+            <div className="relative flex flex-col-reverse w-[4rem] h-full overflow-hidden">
                 <div
-                    className="flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0]"
+                    className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden"
                     style={{
                         height: `${(waterLevel / maxDepth) * 100}%`,
                     }}
                 >
-                    {waterLevel} ft
+                    {/* Bubbles Overlay */}
+                    <div
+                        className="absolute inset-0 mx-1 mt-1"
+                        style={{
+                            backgroundImage:
+                                "url('/assets/Air Bubbles In Water.svg')", // Path to SVG
+                            backgroundSize: "100% auto", // Fill width, maintain aspect ratio
+                            backgroundRepeat: "repeat-y", // Repeat vertically
+                            backgroundPosition: "top", // Align bubbles at the top
+                        }}
+                    ></div>
                 </div>
             </div>
 
-            {/* Lithology Layers */}
+            {/* Right Lithology Layers */}
             <div className="relative flex flex-col w-[1rem] h-full">
                 {layers.map((layer, index) => {
                     const heightFraction =
