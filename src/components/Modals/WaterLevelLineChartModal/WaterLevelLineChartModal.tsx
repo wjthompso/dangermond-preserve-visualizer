@@ -1,19 +1,19 @@
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
-import React, { useState } from "react";
+import React, { useRef } from "react";
 
 const WaterLevelChart: React.FC = () => {
-    const [currentX, setCurrentX] = useState<string>("13");
-    const [currentValue, setCurrentValue] = useState<number>(125);
+    // Store the chart instance
+    const chartRef = useRef<echarts.ECharts>();
 
-    const handleZoom = (span: string) => {
-        console.log(`Zoom to: ${span}`);
-        // Implement time span adjustments here
+    const handleChartReady = (chart: echarts.ECharts) => {
+        chartRef.current = chart;
     };
 
     const option: echarts.EChartsOption = {
         tooltip: {
             trigger: "axis",
+            showContent: false, // Disable the default tooltip box
             axisPointer: {
                 type: "line",
                 lineStyle: {
@@ -21,19 +21,21 @@ const WaterLevelChart: React.FC = () => {
                     width: 1.5,
                     type: "solid",
                 },
+                label: {
+                    show: true, // Enable the label directly above the axis pointer
+                    formatter: (params: any) => {
+                        // Display the precise Y value dynamically
+                        return `${params.seriesData[0].data} ft`;
+                    },
+                    margin: -235, // Position above the top of the chart
+                    padding: [4, 8], // Adjust padding for label text
+                    backgroundColor: "rgba(50, 50, 50, 0.0)", // Label background
+                    color: "#A7D5FF", // Text color
+                    fontSize: 14, // Text font size
+                    fontWeight: "bold",
+                    borderRadius: 4, // Rounded corners
+                },
             },
-            formatter: (params: any) => {
-                const value = params[0].value;
-                const date = params[0].name;
-                setCurrentX(date); // Update X value dynamically
-                setCurrentValue(value); // Update Y value dynamically
-                return `
-                <div style="text-align: center; color: #fff; font-size: 14px;">
-                  ${date} <br/>
-                  <span style="color: #5A9; font-weight: bold;">${value} ft</span>
-                </div>`;
-            },
-            backgroundColor: "rgba(50, 50, 50, 0.8)",
         },
         xAxis: {
             type: "category",
@@ -78,7 +80,7 @@ const WaterLevelChart: React.FC = () => {
             left: "0%",
             right: "2%",
             bottom: "2%",
-            top: "2%",
+            top: "10%", // Allow space for the label above the chart
             containLabel: true,
         },
     };
@@ -106,7 +108,7 @@ const WaterLevelChart: React.FC = () => {
                         <button
                             id={`time-span-${span}`}
                             key={span}
-                            onClick={() => handleZoom(span)}
+                            onClick={() => console.log(`Zoom: ${span}`)}
                             className="w-7 h-7 text-sm text-white bg-[#585858] rounded cursor-pointer hover:bg-gray-600"
                         >
                             {span}
@@ -115,20 +117,11 @@ const WaterLevelChart: React.FC = () => {
                 )}
             </div>
 
-            {/* Current Value Display */}
-            <div
-                id="current-value-display"
-                className="text-center text-white"
-            >
-                <span className="text-xs font-bold">
-                    {currentX}:00 Aug 3, 2024
-                </span>
-            </div>
-
             {/* Chart */}
             <ReactECharts
                 option={option}
                 style={{ height: "267px" }}
+                onChartReady={handleChartReady}
             />
         </div>
     );
