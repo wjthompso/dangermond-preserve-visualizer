@@ -1,4 +1,5 @@
 import React from "react";
+import WaterLevelLineChartModal from "./WaterLevelLineChartModal/WaterLevelLineChartModal";
 import WaterLevelVisualizationModal from "./WaterLevelVisualizationModal/WaterLevelVisualizationModal";
 import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
 
@@ -38,8 +39,8 @@ const AllModels: React.FC = () => {
 
             {/* Column 2 */}
             <div className="flex flex-col ml-4 space-y-4">
-                <div className="w-[378px] h-[410px] rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
-                    Model 3
+                <div className="w-[378px] h-[410px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
+                    <WaterLevelLineChartModal />
                 </div>
                 <div className="w-[378px] h-[376px] rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
                     Model 4
