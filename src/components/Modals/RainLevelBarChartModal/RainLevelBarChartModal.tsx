@@ -87,9 +87,12 @@ const RainLevelBarChartModal: React.FC = () => {
             {
                 data: [120, 125, 130, 118, 112, 135, 122, 128],
                 type: "bar",
+                barWidth: "99%", // Increase bar width to remove gaps
                 itemStyle: {
-                    color: "#91BDE5",
-                    borderRadius: [4, 4, 0, 0],
+                    color: "rgba(90, 153, 255, 1)",
+                    borderColor: "white", // Add thin white border
+                    borderWidth: 1,
+                    borderRadius: [4, 4, 0, 0], // Rounded tops for bars
                 },
             },
         ],
