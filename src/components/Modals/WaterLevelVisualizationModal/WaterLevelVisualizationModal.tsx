@@ -247,6 +247,27 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                             ></div>
                         </div>
                     </div>
+
+                    {/* Invisible Hover Targets for Each Layer */}
+                    <div className="absolute inset-0 z-10 flex flex-col">
+                        {layers.map((layer, index) => {
+                            const heightFraction =
+                                (layer.endDepth - layer.startDepth) / maxDepth;
+                            return (
+                                <div
+                                    key={index}
+                                    style={{
+                                        flexGrow: heightFraction,
+                                        // No visible background needed
+                                    }}
+                                    onMouseEnter={() =>
+                                        setHoveredType(layer.type)
+                                    }
+                                    onMouseLeave={() => setHoveredType(null)}
+                                />
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* Right Lithology Layers */}
@@ -290,7 +311,8 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                     <div
                         key={group}
                         className={`transition-opacity duration-300 ${
-                            hoveredGroup && hoveredGroup !== group
+                            hoveredType &&
+                            !items.some((item) => item.type === hoveredType)
                                 ? "opacity-10"
                                 : "opacity-100"
                         }`}
