@@ -3,10 +3,43 @@ import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
 import React, { useRef, useState } from "react";
 
-const WaterLevelChart: React.FC = () => {
+interface WaterLevelChartProps {
+    xData: string[]; // Timestamps or categories for the X-axis
+    yData: number[]; // Corresponding values for the Y-axis
+    initialTimeSpan?: string; // Optional: default selected timespan
+    paddingRatio?: number; // Optional: padding ratio for Y-axis, defaults to 0.2
+}
+
+const calculateYAxisLimits = (yData: number[], paddingRatio: number = 0.2) => {
+    if (yData.length === 0) {
+        // Fallback if no data
+        return { min: 0, max: 1 };
+    }
+
+    const minVal = Math.min(...yData);
+    const maxVal = Math.max(...yData);
+    // Handle case where all values are the same
+    const range = maxVal - minVal || 1;
+    const padding = range * paddingRatio * 0.5;
+    // If you want total of 20% extra space,
+    // add 10% above and 10% below => multiply by 0.5
+
+    return {
+        min: minVal - padding,
+        max: maxVal + padding,
+    };
+};
+
+const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
+    xData,
+    yData,
+    initialTimeSpan = "1D",
+    paddingRatio = 0.2,
+}) => {
     const chartRef = useRef<echarts.ECharts>();
-    const currentDateRef = useRef<HTMLDivElement>(null); // Ref for the date display
-    const [selectedTimeSpan, setSelectedTimeSpan] = useState<string>("1D"); // State to track selected time span
+    const currentDateRef = useRef<HTMLDivElement>(null);
+    const [selectedTimeSpan, setSelectedTimeSpan] =
+        useState<string>(initialTimeSpan);
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
@@ -29,9 +62,11 @@ const WaterLevelChart: React.FC = () => {
                     const xIndex = params.axesInfo[0].value;
                     const xValue = xAxisData[xIndex] || xIndex;
 
+                    // Modify this as needed; currently hardcoded to Aug 3, 2024
+                    // You might want to pass in a date string array or timestamps
+                    // and format them here properly.
                     const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
 
-                    // Update the date display without re-rendering
                     if (currentDateRef.current) {
                         currentDateRef.current.innerHTML = formattedDate;
                     }
@@ -46,10 +81,23 @@ const WaterLevelChart: React.FC = () => {
         }
     };
 
+    const { min, max } = calculateYAxisLimits(yData, paddingRatio);
+
+    const calculateInterval = (min: number, max: number) => {
+        const range = max - min;
+        if (range <= 12) return 2;
+        if (range <= 50) return 5;
+        if (range <= 100) return 10;
+        if (range <= 500) return 50;
+        return 100;
+    };
+
+    const interval = calculateInterval(min, max);
+
     const option: echarts.EChartsOption = {
         tooltip: {
             trigger: "axis",
-            showContent: false, // Disable the default tooltip box
+            showContent: false,
             axisPointer: {
                 type: "line",
                 lineStyle: {
@@ -58,38 +106,53 @@ const WaterLevelChart: React.FC = () => {
                     type: "solid",
                 },
                 label: {
-                    show: true, // Enable the label directly above the axis pointer
+                    show: true,
                     formatter: (params: any) => {
-                        return `${params.seriesData[0].data} ft`; // Display Y-axis value
+                        // Assuming single series
+                        return `${params.seriesData[0].data} ft`;
                     },
-                    margin: -243, // Position above the top of the chart
-                    padding: [4, 8], // Adjust padding for label text
-                    backgroundColor: "rgba(50, 50, 50, 0.0)", // Label background
-                    color: "#A7D5FF", // Text color
-                    fontSize: 14, // Text font size
+                    margin: -243,
+                    padding: [4, 8],
+                    backgroundColor: "rgba(50, 50, 50, 0.0)",
+                    color: "#A7D5FF",
+                    fontSize: 14,
                     fontWeight: "bold",
-                    borderRadius: 4, // Rounded corners
+                    borderRadius: 4,
                 },
             },
         },
         xAxis: {
             type: "category",
             boundaryGap: false,
-            data: ["10", "11", "12", "13", "14", "15", "16", "17"],
-            axisLine: { lineStyle: { color: "#555" } },
+            data: xData,
+            axisLine: { show: true, lineStyle: { color: "#555" } },
             axisLabel: { color: "#aaa" },
         },
         yAxis: {
             type: "value",
-            min: 110,
-            max: 140,
-            splitLine: { lineStyle: { color: "#555" } },
-            axisLine: { lineStyle: { color: "#555" } },
-            axisLabel: { color: "#aaa" },
+            min: min, // Dynamically calculated minimum with padding
+            max: max, // Dynamically calculated maximum with padding
+            splitNumber: 5, // Evenly spaced ticks
+            interval: interval, // Dynamically calculated interval
+            axisLine: {
+                show: true, // Show Y-axis line
+                lineStyle: { color: "#555" },
+            },
+            axisLabel: {
+                color: "#aaa",
+                formatter: (value) =>
+                    value === max || value === min
+                        ? ""
+                        : Math.round(value).toString(), // Hide the top label
+            },
+            splitLine: {
+                show: true,
+                lineStyle: { color: "#555555", type: "dashed" }, // Style grid lines
+            },
         },
         series: [
             {
-                data: [120, 122, 121, 125, 130, 124.8, 123, 120],
+                data: yData,
                 type: "line",
                 smooth: false,
                 areaStyle: {
@@ -115,7 +178,7 @@ const WaterLevelChart: React.FC = () => {
             left: "0%",
             right: "2%",
             bottom: "2%",
-            top: "8%", // Allow space for the label above the chart
+            top: "8%",
             containLabel: true,
         },
     };
@@ -125,7 +188,6 @@ const WaterLevelChart: React.FC = () => {
             id="water-level-chart-container"
             className="w-full max-w-xl p-0 mx-auto rounded-lg"
         >
-            {/* Chart Title */}
             <h3
                 id="water-level-chart-title"
                 className="mb-1 text-xl font-bold text-white"
@@ -133,7 +195,6 @@ const WaterLevelChart: React.FC = () => {
                 Water Level (ft)
             </h3>
 
-            {/* Time Span Picker */}
             <div
                 id="time-span-picker"
                 className="flex justify-between gap-2 pb-[8px] border-b-[0.6px] border-[#454545]"
@@ -156,7 +217,6 @@ const WaterLevelChart: React.FC = () => {
                 )}
             </div>
 
-            {/* Current Date Display */}
             <div
                 id="current-date-display"
                 ref={currentDateRef}
@@ -165,13 +225,12 @@ const WaterLevelChart: React.FC = () => {
                 10:00 Aug 3, 2024
             </div>
 
-            {/* Chart */}
             <ReactECharts
                 option={option}
                 style={{ height: "267px" }}
                 onChartReady={handleChartReady}
                 onEvents={{
-                    updateAxisPointer: handleAxisPointerUpdate, // Listen for axis pointer updates
+                    updateAxisPointer: handleAxisPointerUpdate,
                 }}
             />
         </div>

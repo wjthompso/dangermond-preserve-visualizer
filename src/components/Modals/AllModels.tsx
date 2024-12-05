@@ -5,6 +5,9 @@ import WaterLevelVisualizationModal from "./WaterLevelVisualizationModal/WaterLe
 import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
 
 const AllModels: React.FC = () => {
+    const mockXData = ["10", "11", "12", "13", "14", "15", "16", "17"];
+    const mockYData = [121, 122, 121, 125, 130, 124.8, 123, 126];
+
     return (
         <div
             id="all-models"
@@ -56,7 +59,11 @@ const AllModels: React.FC = () => {
                     id="water-level-line-chart-modal-container"
                     className="w-[378px] h-[410px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20"
                 >
-                    <WaterLevelLineChartModal />
+                    <WaterLevelLineChartModal
+                        xData={mockXData}
+                        yData={mockYData}
+                    />
+                    ;
                 </div>
                 <div
                     id="rain-level-bar-chart-modal-container"
