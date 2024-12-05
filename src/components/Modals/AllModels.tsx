@@ -1,4 +1,5 @@
 import React from "react";
+import RainLevelBarChartModal from "./RainLevelBarChartModal/RainLevelBarChartModal";
 import WaterLevelLineChartModal from "./WaterLevelLineChartModal/WaterLevelLineChartModal";
 import WaterLevelVisualizationModal from "./WaterLevelVisualizationModal/WaterLevelVisualizationModal";
 import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
@@ -42,8 +43,8 @@ const AllModels: React.FC = () => {
                 <div className="w-[378px] h-[410px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
                     <WaterLevelLineChartModal />
                 </div>
-                <div className="w-[378px] h-[376px] rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
-                    Model 4
+                <div className="w-[378px] h-[376px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20">
+                    <RainLevelBarChartModal />
                 </div>
             </div>
         </div>
