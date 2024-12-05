@@ -18,6 +18,25 @@ const MapComponent: React.FC = () => {
             bearing: 0, // Ensure no rotation, keeps the map flat
         });
 
+        // Add a marker to the map
+        const marker = new maplibreGl.Marker()
+            .setLngLat([-120.452712, 34.467165])
+            .addTo(map);
+
+        // Add hover state to the marker
+        const markerElement = marker.getElement();
+        markerElement.style.cursor = "pointer";
+
+        markerElement.addEventListener("mouseenter", () => {
+            markerElement.style.border = "2px solid white";
+            markerElement.style.borderRadius = "8px";
+        });
+
+        markerElement.addEventListener("mouseleave", () => {
+            markerElement.style.border = "";
+            markerElement.style.borderRadius = "";
+        });
+
         // Clean up on unmount
         return () => map.remove();
     }, []);
@@ -45,3 +64,4 @@ export default MapComponent;
 // 3. The map style used here is from MapTiler, which provides a hybrid (satellite) view.
 // 4. The map has been forced to be 2D by setting `pitch` to 0 and `bearing` to 0.
 // 5. This component fills the entire screen with the map view.
+// 6. A marker has been added to the map with a hover state that adds a white border with rounded corners.
