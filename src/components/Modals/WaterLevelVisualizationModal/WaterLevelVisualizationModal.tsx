@@ -146,7 +146,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
     }, {});
 
     return (
-        <div className="flex items-start justify-center pl-4">
+        <div
+            id="water-level-visualization-content"
+            className="flex items-start justify-center pt-4 pl-4"
+        >
             {/* Well Visualization */}
             <div
                 id="water-level-visualization-graphic"
@@ -178,7 +181,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                 key={index}
                                 className={`relative ${
                                     lithologyColors[layer.type]
-                                } flex-grow transition-all duration-300 ${
+                                } flex-grow ${
                                     hoveredType && hoveredType !== layer.type
                                         ? "opacity-10"
                                         : "opacity-100"
@@ -195,6 +198,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         hoveredType === layer.type
                                             ? "1px solid white"
                                             : "none",
+                                    transition: "opacity 0.3s, border 0.1s",
                                 }}
                             ></div>
                         );
@@ -202,7 +206,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                 </div>
 
                 {/* Water Level */}
-                <div className="relative flex flex-col-reverse w-[3.2rem] h-full overflow-hidden">
+                <div className="relative flex flex-col-reverse w-[3.2rem] h-full">
                     <div
                         className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
                         style={{
@@ -255,7 +259,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                 key={index}
                                 className={`relative ${
                                     lithologyColors[layer.type]
-                                } flex-grow transition-all duration-300 ${
+                                } flex-grow ${
                                     hoveredType && hoveredType !== layer.type
                                         ? "opacity-10"
                                         : "opacity-100"
@@ -272,6 +276,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         hoveredType === layer.type
                                             ? "1px solid white"
                                             : "none",
+                                    transition: "opacity 0.3s, border 0.1s",
                                 }}
                             ></div>
                         );
