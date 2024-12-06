@@ -2,28 +2,21 @@ import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
 import React, { useRef, useState } from "react";
+import { useWaterLevelStore } from "../../../stores/useWaterLevelStore"; // Import Zustand store
 
 interface WaterLevelChartProps {
-    xData: string[]; // Timestamps or categories for the X-axis
-    yData: number[]; // Corresponding values for the Y-axis
-    initialTimeSpan?: string; // Optional: default selected timespan
-    paddingRatio?: number; // Optional: padding ratio for Y-axis, defaults to 0.2
+    xData: string[];
+    yData: number[];
+    initialTimeSpan?: string;
+    paddingRatio?: number;
 }
 
 const calculateYAxisLimits = (yData: number[], paddingRatio: number = 0.2) => {
-    if (yData.length === 0) {
-        // Fallback if no data
-        return { min: 0, max: 1 };
-    }
-
+    if (yData.length === 0) return { min: 0, max: 1 };
     const minVal = Math.min(...yData);
     const maxVal = Math.max(...yData);
-    // Handle case where all values are the same
     const range = maxVal - minVal || 1;
     const padding = range * paddingRatio * 0.5;
-    // If you want total of 20% extra space,
-    // add 10% above and 10% below => multiply by 0.5
-
     return {
         min: minVal - padding,
         max: maxVal + padding,
@@ -36,10 +29,14 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     initialTimeSpan = "1D",
     paddingRatio = 0.2,
 }) => {
-    const chartRef = useRef<echarts.ECharts>();
+    const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
     const [selectedTimeSpan, setSelectedTimeSpan] =
         useState<string>(initialTimeSpan);
+
+    // Import the setter from the global store.
+    const { setWaterLevel } = useWaterLevelStore.getState();
+    // Note: We use getState() to avoid subscribing to changes.
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
@@ -49,12 +46,8 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
         if (params.axesInfo && params.axesInfo[0] && chartRef.current) {
             const chart = chartRef.current;
             const chartOptions = chart.getOption();
-
-            // Check if xAxis exists and is an array
             if (chartOptions.xAxis && Array.isArray(chartOptions.xAxis)) {
                 const xAxis = chartOptions.xAxis[0];
-
-                // Check if xAxis is of type 'category' and has a 'data' property
                 if (xAxis.type === "category" && "data" in xAxis) {
                     const xAxisData = (
                         xAxis as XAXisOption & { data: string[] }
@@ -62,21 +55,17 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                     const xIndex = params.axesInfo[0].value;
                     const xValue = xAxisData[xIndex] || xIndex;
 
-                    // Modify this as needed; currently hardcoded to Aug 3, 2024
-                    // You might want to pass in a date string array or timestamps
-                    // and format them here properly.
-                    const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+                    // Simulate some logic to determine the water level from xValue:
+                    // For example, hoverValue = yData[xIndex]
+                    // Adjust this based on your data structure.
+                    const hoverValue = yData[xIndex] ?? 0;
+                    setWaterLevel(hoverValue);
 
+                    const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
                     if (currentDateRef.current) {
                         currentDateRef.current.innerHTML = formattedDate;
                     }
-                } else {
-                    console.warn(
-                        'xAxis is not of type "category" or does not have a data property.'
-                    );
                 }
-            } else {
-                console.warn("xAxis is not defined or is not an array.");
             }
         }
     };
@@ -108,7 +97,6 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 label: {
                     show: true,
                     formatter: (params: any) => {
-                        // Assuming single series
                         return `${params.seriesData[0].data} ft`;
                     },
                     margin: -243,
@@ -130,12 +118,12 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
         },
         yAxis: {
             type: "value",
-            min: min, // Dynamically calculated minimum with padding
-            max: max, // Dynamically calculated maximum with padding
-            splitNumber: 5, // Evenly spaced ticks
-            interval: interval, // Dynamically calculated interval
+            min: min,
+            max: max,
+            splitNumber: 5,
+            interval: interval,
             axisLine: {
-                show: true, // Show Y-axis line
+                show: true,
                 lineStyle: { color: "#555" },
             },
             axisLabel: {
@@ -143,18 +131,17 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 formatter: (value) =>
                     value === max || value === min
                         ? ""
-                        : Math.round(value).toString(), // Hide the top label
+                        : Math.round(value).toString(),
             },
             splitLine: {
                 show: true,
-                lineStyle: { color: "#555555", type: "dashed" }, // Style grid lines
+                lineStyle: { color: "#555555", type: "dashed" },
             },
         },
         series: [
             {
                 data: yData,
                 type: "line",
-                smooth: false,
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                         { offset: 0, color: "rgba(90, 153, 255, 1)" },
@@ -237,4 +224,4 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     );
 };
 
-export default WaterLevelChart;
+export default React.memo(WaterLevelChart);

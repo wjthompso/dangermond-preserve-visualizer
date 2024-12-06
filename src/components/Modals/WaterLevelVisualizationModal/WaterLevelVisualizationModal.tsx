@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useWaterLevelStore } from "../../../stores/useWaterLevelStore"; // Import Zustand store
 
 interface LithologyLayer {
     startDepth: number;
@@ -122,10 +123,11 @@ const calculateLabelIntervals = (maxDepth: number, maxLabels: number = 16) => {
 
 const WellVisualization: React.FC<WellVisualizationProps> = ({
     layers,
-    waterLevel,
     maxDepth,
 }) => {
     const [hoveredType, setHoveredType] = useState<string | null>(null);
+    // Subscribe to waterLevel changes. This will cause re-renders only when waterLevel changes.
+    const waterLevel = useWaterLevelStore((state) => state.waterLevel);
 
     const hoveredGroup = hoveredType
         ? lithologyLegend.find((item) => item.type === hoveredType)?.group
