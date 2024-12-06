@@ -2,7 +2,7 @@ import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
 import React, { useRef, useState } from "react";
-import { useWaterLevelStore } from "../../../stores/useWaterLevelStore"; // Import Zustand store
+import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 
 interface WaterLevelChartProps {
     xData: string[];
@@ -34,9 +34,9 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     const [selectedTimeSpan, setSelectedTimeSpan] =
         useState<string>(initialTimeSpan);
 
-    // Import the setter from the global store.
-    const { setWaterLevel } = useWaterLevelStore.getState();
-    // Note: We use getState() to avoid subscribing to changes.
+    // Access setters from the store without subscribing
+    const { setWaterLevel, setHoveredAxisIndex } =
+        useWaterLevelStore.getState();
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
@@ -44,8 +44,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
 
     const handleAxisPointerUpdate = (params: any) => {
         if (params.axesInfo && params.axesInfo[0] && chartRef.current) {
-            const chart = chartRef.current;
-            const chartOptions = chart.getOption();
+            const chartOptions = chartRef.current.getOption();
             if (chartOptions.xAxis && Array.isArray(chartOptions.xAxis)) {
                 const xAxis = chartOptions.xAxis[0];
                 if (xAxis.type === "category" && "data" in xAxis) {
@@ -55,9 +54,9 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                     const xIndex = params.axesInfo[0].value;
                     const xValue = xAxisData[xIndex] || xIndex;
 
-                    // Simulate some logic to determine the water level from xValue:
-                    // For example, hoverValue = yData[xIndex]
-                    // Adjust this based on your data structure.
+                    // Update state with hovered index
+                    setHoveredAxisIndex(xIndex);
+
                     const hoverValue = yData[xIndex] ?? 0;
                     setWaterLevel(hoverValue);
 
@@ -86,7 +85,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     const option: echarts.EChartsOption = {
         tooltip: {
             trigger: "axis",
-            showContent: false,
+            showContent: false, // Keep false to only show pointer line
             axisPointer: {
                 type: "line",
                 lineStyle: {
@@ -96,9 +95,8 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 },
                 label: {
                     show: true,
-                    formatter: (params: any) => {
-                        return `${params.seriesData[0].data} ft`;
-                    },
+                    formatter: (params: any) =>
+                        `${params.seriesData[0].data} ft`,
                     margin: -243,
                     padding: [4, 8],
                     backgroundColor: "rgba(50, 50, 50, 0.0)",
@@ -118,8 +116,8 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
         },
         yAxis: {
             type: "value",
-            min: min,
-            max: max,
+            min,
+            max,
             splitNumber: 5,
             interval: interval,
             axisLine: {
@@ -216,9 +214,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 option={option}
                 style={{ height: "267px" }}
                 onChartReady={handleChartReady}
-                onEvents={{
-                    updateAxisPointer: handleAxisPointerUpdate,
-                }}
+                onEvents={{ updateAxisPointer: handleAxisPointerUpdate }}
             />
         </div>
     );
