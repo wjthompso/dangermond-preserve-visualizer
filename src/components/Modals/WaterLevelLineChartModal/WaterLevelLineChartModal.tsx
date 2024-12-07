@@ -1,7 +1,7 @@
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 
 interface WaterLevelChartProps {
@@ -34,18 +34,46 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     const [selectedTimeSpan, setSelectedTimeSpan] =
         useState<string>(initialTimeSpan);
 
-    // Access setters from the store without subscribing
-    const { setWaterLevel, setHoveredAxisIndex } =
+    const { hoveredAxisIndex, setWaterLevel, setHoveredAxisIndex } =
         useWaterLevelStore.getState();
+
+    // This ref tracks whether the next axisPointer event is programmatic
+    const isProgrammaticUpdate = useRef(false);
+
+    // When hoveredAxisIndex changes, showTip on this chart, but mark it as programmatic
+    useEffect(() => {
+        const unsub = useWaterLevelStore.subscribe((state) => {
+            const hovered = state.hoveredAxisIndex;
+            if (chartRef.current) {
+                // Programmatic update starts
+                isProgrammaticUpdate.current = true;
+                if (hovered !== null) {
+                    chartRef.current.dispatchAction({
+                        type: "showTip",
+                        seriesIndex: 0,
+                        dataIndex: hovered,
+                    });
+                } else {
+                    chartRef.current.dispatchAction({ type: "hideTip" });
+                }
+                // Programmatic update ends after showTip/hideTip call
+                isProgrammaticUpdate.current = false;
+            }
+        });
+        return unsub;
+    }, []);
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
     };
 
     const handleAxisPointerUpdate = (params: any) => {
-        if (params.axesInfo && params.axesInfo[0] && chartRef.current) {
+        // If this is a programmatic update, do not update hoveredAxisIndex
+        if (isProgrammaticUpdate.current) return;
+
+        if (params?.axesInfo?.[0] && chartRef.current) {
             const chartOptions = chartRef.current.getOption();
-            if (chartOptions.xAxis && Array.isArray(chartOptions.xAxis)) {
+            if (Array.isArray(chartOptions.xAxis)) {
                 const xAxis = chartOptions.xAxis[0];
                 if (xAxis.type === "category" && "data" in xAxis) {
                     const xAxisData = (
@@ -54,8 +82,9 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                     const xIndex = params.axesInfo[0].value;
                     const xValue = xAxisData[xIndex] || xIndex;
 
-                    // Update state with hovered index
-                    setHoveredAxisIndex(xIndex);
+                    if (hoveredAxisIndex !== xIndex) {
+                        setHoveredAxisIndex(xIndex);
+                    }
 
                     const hoverValue = yData[xIndex] ?? 0;
                     setWaterLevel(hoverValue);
@@ -85,7 +114,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     const option: echarts.EChartsOption = {
         tooltip: {
             trigger: "axis",
-            showContent: false, // Keep false to only show pointer line
+            showContent: false,
             axisPointer: {
                 type: "line",
                 lineStyle: {
@@ -95,8 +124,11 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 },
                 label: {
                     show: true,
-                    formatter: (params: any) =>
-                        `${params.seriesData[0].data} ft`,
+                    // Ensure formatting doesn't cause loops; just return numeric value
+                    formatter: (params: any) => {
+                        const val = Number(params.seriesData[0].data);
+                        return isNaN(val) ? "" : `${val} ft`;
+                    },
                     margin: -243,
                     padding: [4, 8],
                     backgroundColor: "rgba(50, 50, 50, 0.0)",
@@ -120,10 +152,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
             max,
             splitNumber: 5,
             interval: interval,
-            axisLine: {
-                show: true,
-                lineStyle: { color: "#555" },
-            },
+            axisLine: { show: true, lineStyle: { color: "#555" } },
             axisLabel: {
                 color: "#aaa",
                 formatter: (value) =>
@@ -138,7 +167,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
         },
         series: [
             {
-                data: yData,
+                data: yData.map((d) => Number(d)), // Ensure numeric
                 type: "line",
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -146,10 +175,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                         { offset: 1, color: "rgba(90, 153, 255, 0)" },
                     ]),
                 },
-                lineStyle: {
-                    color: "#91BDE5",
-                    width: 2,
-                },
+                lineStyle: { color: "#91BDE5", width: 2 },
                 symbol: "circle",
                 symbolSize: 10,
                 itemStyle: {
@@ -179,7 +205,6 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
             >
                 Water Level (ft)
             </h3>
-
             <div
                 id="time-span-picker"
                 className="flex justify-between gap-2 pb-[8px] border-b-[0.6px] border-[#454545]"
@@ -201,7 +226,6 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                     )
                 )}
             </div>
-
             <div
                 id="current-date-display"
                 ref={currentDateRef}
@@ -209,7 +233,6 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
             >
                 10:00 Aug 3, 2024
             </div>
-
             <ReactECharts
                 option={option}
                 style={{ height: "267px" }}
