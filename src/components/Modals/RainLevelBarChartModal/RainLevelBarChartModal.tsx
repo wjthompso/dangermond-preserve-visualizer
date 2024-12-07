@@ -1,44 +1,28 @@
-// RainLevelBarChartModal.tsx
-
 import * as echarts from "echarts";
-import { CategoryAxisOption, XAXisOption } from "echarts"; // Adjust import path if necessary
 import ReactECharts from "echarts-for-react";
+import type {
+    SeriesOption,
+    XAXisComponentOption,
+} from "echarts/types/dist/shared";
 import React, { useEffect, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 
-// Define a specific type for your chart option
 type RainLevelBarChartOption = echarts.EChartsOption & {
-    xAxis: XAXisOption[];
-    series: echarts.SeriesOption[];
+    xAxis: XAXisComponentOption[];
+    series: SeriesOption[];
 };
-
-// Type guard for category xAxis
-function isCategoryXAXisOption(
-    option: XAXisOption
-): option is CategoryAxisOption {
-    return (
-        option.type === "category" &&
-        Array.isArray((option as CategoryAxisOption).data)
-    );
-}
 
 const RainLevelBarChartModal: React.FC = () => {
     const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
 
-    // Access store setters without subscribing in the render
     const setHoveredAxisIndex =
         useWaterLevelStore.getState().setHoveredAxisIndex;
-
-    // Refs to track current state
     const hoveredAxisIndexRef = useRef<number | null>(
         useWaterLevelStore.getState().hoveredAxisIndex
     );
-
-    // Flag to distinguish between user and programmatic updates
     const isProgrammaticUpdate = useRef(false);
 
-    // When hoveredAxisIndex changes, showTip on this chart and update subtitle
     useEffect(() => {
         const unsub = useWaterLevelStore.subscribe(
             (state) => state.hoveredAxisIndex,
@@ -47,14 +31,12 @@ const RainLevelBarChartModal: React.FC = () => {
 
                 isProgrammaticUpdate.current = true;
                 if (hovered !== null) {
-                    // Show tooltip at hoveredAxisIndex
                     chartRef.current.dispatchAction({
                         type: "showTip",
                         seriesIndex: 0,
                         dataIndex: hovered,
                     });
 
-                    // Safely access xAxisData with type assertions
                     const option =
                         chartRef.current.getOption() as RainLevelBarChartOption;
                     const xAxisOption =
@@ -62,24 +44,24 @@ const RainLevelBarChartModal: React.FC = () => {
                             ? option.xAxis[0]
                             : null;
 
-                    if (xAxisOption && isCategoryXAXisOption(xAxisOption)) {
-                        const xAxisData = xAxisOption.data as string[];
-                        const xValue = xAxisData[hovered] || hovered.toString();
+                    if (
+                        xAxisOption &&
+                        xAxisOption.type === "category" &&
+                        Array.isArray(xAxisOption.data)
+                    ) {
+                        const xValue = xAxisOption.data[hovered] as string;
                         const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
                         if (currentDateRef.current) {
                             currentDateRef.current.innerHTML = formattedDate;
                         }
                     } else {
-                        // Fallback if xAxis data is not as expected
                         if (currentDateRef.current) {
                             currentDateRef.current.innerHTML =
                                 "Invalid data hovered";
                         }
                     }
                 } else {
-                    // Hide tooltip
                     chartRef.current.dispatchAction({ type: "hideTip" });
-                    // Optionally, reset the subtitle when no hover
                     if (currentDateRef.current) {
                         currentDateRef.current.innerHTML = "No data hovered";
                     }
@@ -98,7 +80,6 @@ const RainLevelBarChartModal: React.FC = () => {
     };
 
     const handleAxisPointerUpdate = (params: any) => {
-        // If this is a programmatic update, skip updating hoveredAxisIndex
         if (isProgrammaticUpdate.current) return;
 
         if (params?.axesInfo?.[0] && chartRef.current) {
@@ -109,18 +90,20 @@ const RainLevelBarChartModal: React.FC = () => {
                     ? option.xAxis[0]
                     : null;
 
-            if (xAxisOption && isCategoryXAXisOption(xAxisOption)) {
+            if (
+                xAxisOption &&
+                xAxisOption.type === "category" &&
+                Array.isArray(xAxisOption.data)
+            ) {
                 const xAxisData = xAxisOption.data as string[];
                 const xIndex = params.axesInfo[0].value;
                 const xValue = xAxisData[xIndex] || xIndex.toString();
 
-                // Update hoveredAxisIndex only if different
                 if (hoveredAxisIndexRef.current !== xIndex) {
                     hoveredAxisIndexRef.current = xIndex;
                     setHoveredAxisIndex(xIndex);
                 }
 
-                // Update date display
                 const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
                 if (currentDateRef.current) {
                     currentDateRef.current.innerHTML = formattedDate;
@@ -129,7 +112,7 @@ const RainLevelBarChartModal: React.FC = () => {
         }
     };
 
-    const option: echarts.EChartsOption = {
+    const option: RainLevelBarChartOption = {
         tooltip: {
             trigger: "axis",
             showContent: false,
@@ -142,9 +125,8 @@ const RainLevelBarChartModal: React.FC = () => {
                 },
                 label: {
                     show: true,
-                    // Ensure formatting doesn't cause loops; just return numeric value
                     formatter: (params: any) => {
-                        const val = Number(params.seriesData[0].data);
+                        const val = Number(params.seriesData[0]?.data);
                         return isNaN(val) ? "" : `${val} in`;
                     },
                     margin: -243,
@@ -157,13 +139,14 @@ const RainLevelBarChartModal: React.FC = () => {
                 },
             },
         },
-        xAxis: {
-            type: "category",
-            boundaryGap: true,
-            data: ["10", "11", "12", "13", "14", "15", "16", "17"],
-            axisLine: { lineStyle: { color: "#555" } },
-            axisLabel: { color: "#aaa" },
-        },
+        xAxis: [
+            {
+                type: "category",
+                data: ["10", "11", "12", "13", "14", "15", "16", "17"],
+                axisLine: { lineStyle: { color: "#555" } },
+                axisLabel: { color: "#aaa" },
+            },
+        ],
         yAxis: {
             type: "value",
             min: 110,
@@ -174,9 +157,7 @@ const RainLevelBarChartModal: React.FC = () => {
         },
         series: [
             {
-                data: [120, 125, 130, 118, 112, 135, 122, 128].map((d) =>
-                    Number(d)
-                ),
+                data: [120, 125, 130, 118, 112, 135, 122, 128],
                 type: "bar",
                 barWidth: "99%",
                 itemStyle: {
@@ -197,25 +178,16 @@ const RainLevelBarChartModal: React.FC = () => {
     };
 
     return (
-        <div
-            id="rain-level-chart-container"
-            className="w-full max-w-xl p-0 mx-auto rounded-lg"
-        >
-            <h3
-                id="rain-level-chart-title"
-                className="mb-1 text-xl font-bold text-white"
-            >
+        <div className="w-full max-w-xl p-0 mx-auto rounded-lg">
+            <h3 className="mb-1 text-xl font-bold text-white">
                 Rain Level (in)
             </h3>
-
             <div
-                id="current-date-display"
                 ref={currentDateRef}
                 className="mt-[0.125rem] text-sm font-medium text-center text-white"
             >
                 10:00 Aug 3, 2024
             </div>
-
             <ReactECharts
                 option={option}
                 style={{ height: "267px" }}
