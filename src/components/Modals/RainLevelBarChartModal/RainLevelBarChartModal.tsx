@@ -1,3 +1,5 @@
+// RainLevelBarChartModal.tsx
+
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
@@ -8,31 +10,40 @@ const RainLevelBarChartModal: React.FC = () => {
     const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
 
-    const { hoveredAxisIndex, setHoveredAxisIndex } =
-        useWaterLevelStore.getState();
+    // Access store setters without subscribing in the render
+    const setHoveredAxisIndex =
+        useWaterLevelStore.getState().setHoveredAxisIndex;
 
-    // Programmatic update flag
+    // Refs to track current state
+    const hoveredAxisIndexRef = useRef<number | null>(
+        useWaterLevelStore.getState().hoveredAxisIndex
+    );
+
+    // Flag to distinguish between user and programmatic updates
     const isProgrammaticUpdate = useRef(false);
 
-    // When hoveredAxisIndex changes, showTip on this chart, marking update as programmatic
+    // When hoveredAxisIndex changes, showTip on this chart
     useEffect(() => {
         const unsub = useWaterLevelStore.subscribe((state) => {
-            const hovered = state.hoveredAxisIndex;
-            if (chartRef.current) {
-                isProgrammaticUpdate.current = true;
-                if (hovered !== null) {
-                    chartRef.current.dispatchAction({
-                        type: "showTip",
-                        seriesIndex: 0,
-                        dataIndex: hovered,
-                    });
-                } else {
-                    chartRef.current.dispatchAction({ type: "hideTip" });
-                }
-                isProgrammaticUpdate.current = false;
+            const hovered: number | null = state.hoveredAxisIndex;
+            if (!chartRef.current) return;
+
+            isProgrammaticUpdate.current = true;
+            if (hovered !== null) {
+                chartRef.current.dispatchAction({
+                    type: "showTip",
+                    seriesIndex: 0,
+                    dataIndex: hovered,
+                });
+            } else {
+                chartRef.current.dispatchAction({ type: "hideTip" });
             }
+            isProgrammaticUpdate.current = false;
         });
-        return unsub;
+
+        return () => {
+            unsub();
+        };
     }, []);
 
     const handleChartReady = (chart: echarts.ECharts) => {
@@ -54,21 +65,18 @@ const RainLevelBarChartModal: React.FC = () => {
                     const xIndex = params.axesInfo[0].value;
                     const xValue = xAxisData[xIndex] || xIndex;
 
-                    if (hoveredAxisIndex !== xIndex) {
+                    // Update hoveredAxisIndex only if different
+                    if (hoveredAxisIndexRef.current !== xIndex) {
+                        hoveredAxisIndexRef.current = xIndex;
                         setHoveredAxisIndex(xIndex);
                     }
 
+                    // Update date display
                     const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
                     if (currentDateRef.current) {
                         currentDateRef.current.innerHTML = formattedDate;
                     }
-                } else {
-                    console.warn(
-                        'xAxis is not "category" or lacks a data property.'
-                    );
                 }
-            } else {
-                console.warn("xAxis is not defined or not an array.");
             }
         }
     };

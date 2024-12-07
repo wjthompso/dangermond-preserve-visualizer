@@ -1,7 +1,9 @@
+// WaterLevelChart.tsx
+
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import { XAXisOption } from "echarts/types/dist/shared";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 
 interface WaterLevelChartProps {
@@ -36,89 +38,21 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     const [selectedTimeSpan, setSelectedTimeSpan] =
         useState<string>(initialTimeSpan);
 
-    // Access Zustand store values and setters
-    const hoveredAxisIndex = useWaterLevelStore(
-        (state) => state.hoveredAxisIndex
+    // Access store setters without subscribing in the render
+    const setWaterLevel = useWaterLevelStore.getState().setWaterLevel;
+    const setHoveredAxisIndex =
+        useWaterLevelStore.getState().setHoveredAxisIndex;
+
+    // Refs to keep track of current hoveredAxisIndex and waterLevel
+    const hoveredAxisIndexRef = useRef<number | null>(
+        useWaterLevelStore.getState().hoveredAxisIndex
     );
-    const waterLevel = useWaterLevelStore((state) => state.waterLevel);
-    const setWaterLevel = useWaterLevelStore((state) => state.setWaterLevel);
-    const setHoveredAxisIndex = useWaterLevelStore(
-        (state) => state.setHoveredAxisIndex
+    const waterLevelRef = useRef<number>(
+        useWaterLevelStore.getState().waterLevel
     );
 
     // Flag to distinguish between user and programmatic updates
     const isProgrammaticUpdate = useRef(false);
-
-    // When hoveredAxisIndex changes, programmatically update chart tooltip
-    useEffect(() => {
-        if (!chartRef.current) return;
-
-        isProgrammaticUpdate.current = true;
-        if (hoveredAxisIndex !== null) {
-            // Show tooltip at hoveredAxisIndex
-            chartRef.current.dispatchAction({
-                type: "showTip",
-                seriesIndex: 0,
-                dataIndex: hoveredAxisIndex,
-            });
-
-            // Update water level only if changed
-            const newLevel = yData[hoveredAxisIndex] ?? 0;
-            if (newLevel !== waterLevel) {
-                setWaterLevel(newLevel);
-            }
-
-            // Update date display
-            const xValue = xData[hoveredAxisIndex];
-            if (currentDateRef.current) {
-                currentDateRef.current.innerHTML = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
-            }
-        } else {
-            // Hide tooltip
-            chartRef.current.dispatchAction({ type: "hideTip" });
-        }
-        isProgrammaticUpdate.current = false;
-    }, [hoveredAxisIndex, yData, xData, waterLevel, setWaterLevel]);
-
-    const handleChartReady = (chart: echarts.ECharts) => {
-        chartRef.current = chart;
-    };
-
-    const handleAxisPointerUpdate = (params: any) => {
-        // If this is a programmatic update, do not modify the store
-        if (isProgrammaticUpdate.current) return;
-
-        if (params?.axesInfo?.[0] && chartRef.current) {
-            const chartOptions = chartRef.current.getOption();
-            if (Array.isArray(chartOptions.xAxis)) {
-                const xAxis = chartOptions.xAxis[0];
-                if (xAxis.type === "category" && "data" in xAxis) {
-                    const xAxisData = (
-                        xAxis as XAXisOption & { data: string[] }
-                    ).data;
-                    const xIndex = params.axesInfo[0].value;
-
-                    // Update hoveredAxisIndex only if different
-                    if (hoveredAxisIndex !== xIndex) {
-                        setHoveredAxisIndex(xIndex);
-                    }
-
-                    // Update water level only if it changes here due to user hover in this chart
-                    const hoverValue = yData[xIndex] ?? 0;
-                    if (hoverValue !== waterLevel) {
-                        setWaterLevel(hoverValue);
-                    }
-
-                    // Update date display
-                    const xValue = xAxisData[xIndex] || xIndex;
-                    if (currentDateRef.current) {
-                        const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
-                        currentDateRef.current.innerHTML = formattedDate;
-                    }
-                }
-            }
-        }
-    };
 
     const { min, max } = calculateYAxisLimits(yData, paddingRatio);
 
@@ -133,86 +67,181 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
 
     const interval = calculateInterval(min, max);
 
-    const option: echarts.EChartsOption = {
-        tooltip: {
-            trigger: "axis",
-            showContent: false,
-            axisPointer: {
-                type: "line",
-                lineStyle: {
-                    color: "#91BDE5",
-                    width: 1,
-                    type: "solid",
-                },
-                label: {
-                    show: true,
-                    formatter: (params: any) => {
-                        const val = Number(params.seriesData[0].data);
-                        return isNaN(val) ? "" : `${val} ft`;
+    // Memoize option to prevent unnecessary recalculations
+    const option: echarts.EChartsOption = useMemo(
+        () => ({
+            tooltip: {
+                trigger: "axis",
+                showContent: false,
+                axisPointer: {
+                    type: "line",
+                    lineStyle: {
+                        color: "#91BDE5",
+                        width: 1,
+                        type: "solid",
                     },
-                    margin: -243,
-                    padding: [4, 8],
-                    backgroundColor: "rgba(50, 50, 50, 0.0)",
-                    color: "#A7D5FF",
-                    fontSize: 14,
-                    fontWeight: "bold",
-                    borderRadius: 4,
+                    label: {
+                        show: true,
+                        formatter: (params: any) => {
+                            const val = Number(params.seriesData[0].data);
+                            return isNaN(val) ? "" : `${val} ft`;
+                        },
+                        margin: -243,
+                        padding: [4, 8],
+                        backgroundColor: "rgba(50, 50, 50, 0.0)",
+                        color: "#A7D5FF",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        borderRadius: 4,
+                    },
                 },
             },
-        },
-        xAxis: {
-            type: "category",
-            boundaryGap: false,
-            data: xData,
-            axisLine: { show: true, lineStyle: { color: "#555" } },
-            axisLabel: { color: "#aaa" },
-        },
-        yAxis: {
-            type: "value",
-            min,
-            max,
-            splitNumber: 5,
-            interval: interval,
-            axisLine: { show: true, lineStyle: { color: "#555" } },
-            axisLabel: {
-                color: "#aaa",
-                formatter: (value) =>
-                    value === max || value === min
-                        ? ""
-                        : Math.round(value).toString(),
+            xAxis: {
+                type: "category",
+                boundaryGap: false,
+                data: xData,
+                axisLine: { show: true, lineStyle: { color: "#555" } },
+                axisLabel: { color: "#aaa" },
             },
-            splitLine: {
-                show: true,
-                lineStyle: { color: "#555555", type: "dashed" },
-            },
-        },
-        series: [
-            {
-                data: yData.map((d) => Number(d)),
-                type: "line",
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: "rgba(90, 153, 255, 1)" },
-                        { offset: 1, color: "rgba(90, 153, 255, 0)" },
-                    ]),
+            yAxis: {
+                type: "value",
+                min,
+                max,
+                splitNumber: 5,
+                interval: interval,
+                axisLine: { show: true, lineStyle: { color: "#555" } },
+                axisLabel: {
+                    color: "#aaa",
+                    formatter: (value) =>
+                        value === max || value === min
+                            ? ""
+                            : Math.round(value).toString(),
                 },
-                lineStyle: { color: "#91BDE5", width: 2 },
-                symbol: "circle",
-                symbolSize: 10,
-                itemStyle: {
-                    color: "#91BDE5",
-                    borderColor: "#1E1E1E",
-                    borderWidth: 3,
+                splitLine: {
+                    show: true,
+                    lineStyle: { color: "#555555", type: "dashed" },
                 },
             },
-        ],
-        grid: {
-            left: "0%",
-            right: "2%",
-            bottom: "2%",
-            top: "8%",
-            containLabel: true,
-        },
+            series: [
+                {
+                    data: yData.map((d) => Number(d)), // Ensure numeric
+                    type: "line",
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: "rgba(90, 153, 255, 1)" },
+                            { offset: 1, color: "rgba(90, 153, 255, 0)" },
+                        ]),
+                    },
+                    lineStyle: { color: "#91BDE5", width: 2 },
+                    symbol: "circle",
+                    symbolSize: 10,
+                    itemStyle: {
+                        color: "#91BDE5",
+                        borderColor: "#1E1E1E",
+                        borderWidth: 3,
+                    },
+                },
+            ],
+            grid: {
+                left: "0%",
+                right: "2%",
+                bottom: "2%",
+                top: "8%",
+                containLabel: true,
+            },
+        }),
+        [xData, yData, min, max, interval]
+    );
+
+    // Handle chart readiness
+    const handleChartReady = (chart: echarts.ECharts) => {
+        chartRef.current = chart;
+    };
+
+    // Function to update water level and date display
+    const updateWaterLevelAndDate = (xIndex: number) => {
+        const newLevel = yData[xIndex] ?? 0;
+        if (newLevel !== waterLevelRef.current) {
+            waterLevelRef.current = newLevel;
+            setWaterLevel(newLevel);
+        }
+
+        const xValue = xData[xIndex];
+        const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+        if (currentDateRef.current) {
+            currentDateRef.current.innerHTML = formattedDate;
+        }
+    };
+
+    useEffect(() => {
+        // Single listener for all state changes
+        const unsub = useWaterLevelStore.subscribe((state, previousState) => {
+            const { hoveredAxisIndex, waterLevel } = state;
+            const prevHovered = previousState.hoveredAxisIndex;
+            const prevWaterLevel = previousState.waterLevel;
+
+            // Handle hoveredAxisIndex change
+            if (hoveredAxisIndex !== prevHovered) {
+                if (!chartRef.current) return;
+
+                hoveredAxisIndexRef.current = hoveredAxisIndex;
+                isProgrammaticUpdate.current = true;
+
+                if (hoveredAxisIndex !== null) {
+                    // Show tooltip at hoveredAxisIndex
+                    chartRef.current.dispatchAction({
+                        type: "showTip",
+                        seriesIndex: 0,
+                        dataIndex: hoveredAxisIndex,
+                    });
+
+                    // Update water level and date for this hovered index
+                    updateWaterLevelAndDate(hoveredAxisIndex);
+                } else {
+                    // Hide tooltip
+                    chartRef.current.dispatchAction({ type: "hideTip" });
+                }
+
+                isProgrammaticUpdate.current = false;
+            }
+
+            // Handle waterLevel change if needed
+            if (waterLevel !== prevWaterLevel) {
+                waterLevelRef.current = waterLevel;
+                // If you have additional side-effects for waterLevel changes, handle them here
+            }
+        });
+
+        return () => {
+            unsub();
+        };
+    }, [xData, yData, setWaterLevel]);
+
+    const handleAxisPointerUpdate = (params: any) => {
+        // If this is a programmatic update, skip updating hoveredAxisIndex
+        if (isProgrammaticUpdate.current) return;
+
+        if (params?.axesInfo?.[0] && chartRef.current) {
+            const chartOptions = chartRef.current.getOption();
+            if (Array.isArray(chartOptions.xAxis)) {
+                const xAxis = chartOptions.xAxis[0];
+                if (xAxis.type === "category" && "data" in xAxis) {
+                    const xAxisData = (
+                        xAxis as XAXisOption & { data: string[] }
+                    ).data;
+                    const xIndex = params.axesInfo[0].value;
+
+                    // Update hoveredAxisIndex only if different
+                    if (hoveredAxisIndexRef.current !== xIndex) {
+                        hoveredAxisIndexRef.current = xIndex;
+                        setHoveredAxisIndex(xIndex);
+                    }
+
+                    // Update water level and date display
+                    updateWaterLevelAndDate(xIndex);
+                }
+            }
+        }
     };
 
     return (
