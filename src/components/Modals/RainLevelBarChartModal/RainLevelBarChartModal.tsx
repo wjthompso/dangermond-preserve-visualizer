@@ -9,11 +9,38 @@ import type {
 import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
-import { findClosestTimestamp } from "../../../utils/timeSeriesUtils";
 
 interface RainLevelBarChartModalProps {
+    waterData: TimeSeriesData[]; // Needed to find hovered timestamp from line chart
     rainData: TimeSeriesData[];
     timeSpan: TimeSpan;
+}
+
+function findClosestTimestamp(
+    targetData: TimeSeriesData[],
+    referenceTime: Date
+): { index: number; data: TimeSeriesData } | null {
+    if (targetData.length === 0) return null;
+
+    let closestIndex = 0;
+    let closest = targetData[0];
+    let minDiff = Math.abs(
+        new Date(closest.dateTime).getTime() - referenceTime.getTime()
+    );
+
+    for (let i = 1; i < targetData.length; i++) {
+        const current = targetData[i];
+        const currentDiff = Math.abs(
+            new Date(current.dateTime).getTime() - referenceTime.getTime()
+        );
+        if (currentDiff < minDiff) {
+            closest = current;
+            closestIndex = i;
+            minDiff = currentDiff;
+        }
+    }
+
+    return { index: closestIndex, data: closest };
 }
 
 type RainLevelBarChartOption = echarts.EChartsOption & {
@@ -22,21 +49,21 @@ type RainLevelBarChartOption = echarts.EChartsOption & {
 };
 
 const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
+    waterData,
     rainData,
     timeSpan,
 }) => {
     const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
-
+    const hoveredAxisIndexRef = useRef<number | null>(
+        useWaterLevelStore.getState().hoveredAxisIndex
+    );
     const setHoveredAxisIndex =
         useWaterLevelStore.getState().setHoveredAxisIndex;
-    const hoveredDateTime = useWaterLevelStore(
-        (state) => state.hoveredDateTime
-    );
+    const isProgrammaticUpdate = useRef(false);
 
     const option: RainLevelBarChartOption = useMemo(() => {
         if (rainData.length === 0) {
-            // Handle empty data gracefully by returning a minimal option
             return {
                 xAxis: [
                     {
@@ -105,7 +132,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 min: Math.min(...rainData.map((d) => d.value)) - 0.5,
                 max: Math.max(...rainData.map((d) => d.value)) + 0.5,
                 splitNumber: 5,
-                interval: 0.5, // adjust as needed
+                interval: 0.5,
                 axisLine: { lineStyle: { color: "#555" } },
                 axisLabel: { color: "#aaa" },
                 splitLine: {
@@ -136,58 +163,79 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
         };
     }, [rainData]);
 
-    /**
-     * Handles chart readiness by storing the chart instance.
-     * @param chart - The ECharts instance.
-     */
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
     };
 
-    /**
-     * Effect to synchronize tooltips based on hoveredDateTime from Water Level Chart.
-     */
+    // Subscribe to hoveredAxisIndex changes and update this chart accordingly
     useEffect(() => {
-        if (!hoveredDateTime || rainData.length === 0 || !chartRef.current) {
-            chartRef.current?.dispatchAction({ type: "hideTip" });
-            if (currentDateRef.current) {
-                currentDateRef.current.innerHTML = "No data hovered";
+        const unsub = useWaterLevelStore.subscribe(
+            (state) => state.hoveredAxisIndex,
+            (hovered: number | null) => {
+                if (!chartRef.current) return;
+                isProgrammaticUpdate.current = true;
+                if (
+                    hovered !== null &&
+                    hovered < waterData.length &&
+                    rainData.length > 0
+                ) {
+                    // Find the timestamp in waterData at hovered
+                    const refTime = new Date(waterData[hovered].dateTime);
+                    const closest = findClosestTimestamp(rainData, refTime);
+                    if (closest) {
+                        chartRef.current.dispatchAction({
+                            type: "showTip",
+                            seriesIndex: 0,
+                            dataIndex: closest.index,
+                        });
+                        const formattedDate = `<strong>${
+                            closest.data.dateTime
+                        }</strong> on ${refTime.toDateString()}`;
+                        if (currentDateRef.current) {
+                            currentDateRef.current.innerHTML = formattedDate;
+                        }
+                    } else {
+                        chartRef.current.dispatchAction({ type: "hideTip" });
+                        if (currentDateRef.current) {
+                            currentDateRef.current.innerHTML =
+                                "No rain data available for this date.";
+                        }
+                    }
+                } else {
+                    chartRef.current.dispatchAction({ type: "hideTip" });
+                    if (currentDateRef.current) {
+                        currentDateRef.current.innerHTML = "No data hovered";
+                    }
+                }
+                isProgrammaticUpdate.current = false;
             }
-            return;
-        }
+        );
+        return () => {
+            unsub();
+        };
+    }, [waterData, rainData]);
 
-        // Parse hoveredDateTime to Date object
-        const referenceTime = new Date(hoveredDateTime);
-        const closestRain = findClosestTimestamp(rainData, referenceTime);
-
-        if (closestRain) {
-            const rainIndex = rainData.findIndex(
-                (d) => d.dateTime === closestRain.dateTime
-            );
-            if (rainIndex !== -1) {
-                chartRef.current.dispatchAction({
-                    type: "showTip",
-                    seriesIndex: 0,
-                    dataIndex: rainIndex,
-                });
-                const formattedDate = `<strong>${
-                    closestRain.dateTime
-                }</strong> on ${new Date(closestRain.dateTime).toDateString()}`;
-                if (currentDateRef.current) {
-                    currentDateRef.current.innerHTML = formattedDate;
+    const handleAxisPointerUpdate = (params: any) => {
+        if (isProgrammaticUpdate.current) return;
+        if (
+            params?.axesInfo?.[0] &&
+            chartRef.current &&
+            rainData.length > 0 &&
+            waterData.length > 0
+        ) {
+            const xIndex = params.axesInfo[0].value;
+            if (xIndex !== null && xIndex >= 0 && xIndex < rainData.length) {
+                // Rain chart hovered a certain rain timestamp, find closest in waterData
+                const refTime = new Date(rainData[xIndex].dateTime);
+                const closestWater = findClosestTimestamp(waterData, refTime);
+                if (closestWater) {
+                    useWaterLevelStore
+                        .getState()
+                        .setHoveredAxisIndex(closestWater.index);
                 }
             }
-        } else {
-            // Hide tip if no corresponding data
-            if (chartRef.current) {
-                chartRef.current.dispatchAction({ type: "hideTip" });
-            }
-            if (currentDateRef.current) {
-                currentDateRef.current.innerHTML =
-                    "No rain data available for this date.";
-            }
         }
-    }, [hoveredDateTime, rainData]);
+    };
 
     return (
         <div className="w-full max-w-xl p-0 mx-auto rounded-lg">
@@ -199,9 +247,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 ref={currentDateRef}
                 className="mt-[0.125rem] text-sm font-medium text-center text-white"
             >
-                {hoveredDateTime
-                    ? `Date: ${hoveredDateTime}`
-                    : "Hover over the chart"}
+                Hover over the chart
             </div>
             {rainData.length === 0 ? (
                 <div className="mt-4 text-sm font-medium text-center text-white">
@@ -212,6 +258,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                     option={option}
                     style={{ height: "267px" }}
                     onChartReady={handleChartReady}
+                    onEvents={{ updateAxisPointer: handleAxisPointerUpdate }}
                 />
             )}
         </div>

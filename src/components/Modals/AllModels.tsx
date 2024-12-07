@@ -2,22 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { CombinedData, DataManager } from "../../services/DataManager";
-import { useWaterLevelStore } from "../../stores/useWaterLevelStore"; // Ensure this path is correct and the file exists
 import { TimeSpan } from "../../types/timeSeriesTypes";
-import { filterTimeSeries } from "../../utils/timeSeriesUtils"; // Import the utility
+import { filterTimeSeries } from "../../utils/timeSeriesUtils";
 import RainLevelBarChartModal from "./RainLevelBarChartModal/RainLevelBarChartModal";
 import WaterLevelLineChartModal from "./WaterLevelLineChartModal/WaterLevelLineChartModal";
 import WaterLevelVisualizationModal from "./WaterLevelVisualizationModal/WaterLevelVisualizationModal";
 import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
 
 const AllModels: React.FC = () => {
-    const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D"); // Initial time span set to "1D"
+    const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D");
     const [combinedData, setCombinedData] = useState<CombinedData | null>(null);
-    const wellId = "Escondido_5"; // Replace with actual well ID as needed
-
-    const setWaterLevelData = useWaterLevelStore(
-        (state) => state.setWaterLevelData
-    );
+    const wellId = "Escondido_5"; // Replace with actual well ID
 
     useEffect(() => {
         const loadData = async () => {
@@ -33,40 +28,19 @@ const AllModels: React.FC = () => {
         loadData();
     }, [wellId]);
 
-    useEffect(() => {
-        if (combinedData) {
-            // Apply filtering based on the selected timeSpan
-            const filteredWaterData = filterTimeSeries(
-                combinedData.waterLevel,
-                timeSpan
-            );
-            const filteredRainData = filterTimeSeries(
-                combinedData.rainLevel,
-                timeSpan
-            );
-
-            // Store water data in global store for synchronization
-            setWaterLevelData(filteredWaterData);
-
-            // Console log the filtered data
-            console.log(
-                `Filtered Water Data (${timeSpan}):`,
-                filteredWaterData
-            );
-            console.log(`Filtered Rain Data (${timeSpan}):`, filteredRainData);
-        }
-    }, [combinedData, timeSpan, setWaterLevelData]);
-
     if (!combinedData) {
         return <div>Loading data...</div>;
     }
 
-    // Pass filtered data to child components
     const filteredWaterData = filterTimeSeries(
         combinedData.waterLevel,
         timeSpan
     );
     const filteredRainData = filterTimeSeries(combinedData.rainLevel, timeSpan);
+
+    // Log filtered data for debugging
+    console.log(`Filtered Water Data (${timeSpan}):`, filteredWaterData);
+    console.log(`Filtered Rain Data (${timeSpan}):`, filteredRainData);
 
     return (
         <div
@@ -121,6 +95,7 @@ const AllModels: React.FC = () => {
                 >
                     <WaterLevelLineChartModal
                         waterData={filteredWaterData}
+                        rainData={filteredRainData}
                         timeSpan={timeSpan}
                         setTimeSpan={setTimeSpan}
                     />
@@ -130,6 +105,7 @@ const AllModels: React.FC = () => {
                     className="w-[378px] h-[376px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20"
                 >
                     <RainLevelBarChartModal
+                        waterData={filteredWaterData}
                         rainData={filteredRainData}
                         timeSpan={timeSpan}
                     />
