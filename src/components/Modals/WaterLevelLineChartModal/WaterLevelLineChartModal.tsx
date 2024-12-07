@@ -1,10 +1,9 @@
-// src/components/Modals/WaterLevelLineChartModal/WaterLevelLineChartModal.tsx
-
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
 import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
+import { formatTimestamp } from "../../../utils/timeSeriesUtils";
 
 interface WaterLevelLineChartModalProps {
     waterData: TimeSeriesData[];
@@ -145,7 +144,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
         setWaterLevel(newLevel);
 
         const xValue = waterData[xIndex]?.dateTime || "";
-        const formattedDate = `<strong>${xValue}</strong>`;
+        const formattedDate = `<strong>${formatTimestamp(xValue)}</strong>`;
         if (currentDateRef.current) {
             currentDateRef.current.innerHTML = formattedDate;
         }

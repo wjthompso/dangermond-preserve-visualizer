@@ -9,6 +9,7 @@ import type {
 import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
+import { formatTimestamp } from "../../../utils/timeSeriesUtils";
 
 interface RainLevelBarChartModalProps {
     waterData: TimeSeriesData[]; // Needed to find hovered timestamp from line chart
@@ -173,26 +174,29 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
             (state) => state.hoveredAxisIndex,
             (hovered: number | null) => {
                 if (!chartRef.current) return;
+
                 isProgrammaticUpdate.current = true;
+
                 if (
                     hovered !== null &&
                     hovered < waterData.length &&
                     rainData.length > 0
                 ) {
-                    // Find the timestamp in waterData at hovered
                     const refTime = new Date(waterData[hovered].dateTime);
                     const closest = findClosestTimestamp(rainData, refTime);
+
                     if (closest) {
                         chartRef.current.dispatchAction({
                             type: "showTip",
                             seriesIndex: 0,
                             dataIndex: closest.index,
                         });
-                        const formattedDate = `<strong>${
-                            closest.data.dateTime
-                        }</strong> on ${refTime.toDateString()}`;
+
                         if (currentDateRef.current) {
-                            currentDateRef.current.innerHTML = formattedDate;
+                            const formattedDate = formatTimestamp(
+                                closest.data.dateTime
+                            ); // Apply formatting here
+                            currentDateRef.current.innerHTML = `<strong>${formattedDate}</strong>`;
                         }
                     } else {
                         chartRef.current.dispatchAction({ type: "hideTip" });
@@ -207,9 +211,11 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                         currentDateRef.current.innerHTML = "No data hovered";
                     }
                 }
+
                 isProgrammaticUpdate.current = false;
             }
         );
+
         return () => {
             unsub();
         };

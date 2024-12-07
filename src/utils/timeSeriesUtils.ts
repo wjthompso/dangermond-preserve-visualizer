@@ -74,3 +74,30 @@ export const findClosestTimestamp = (
 
     return closest;
 };
+
+export const formatTimestamp = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+
+    // Use Intl.DateTimeFormat with custom options for 24-hour format
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23", // 24-hour clock
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+
+    // Format the date
+    const parts = formatter.formatToParts(date);
+
+    // Extract and rearrange the parts
+    const time = `${parts.find((p) => p.type === "hour")?.value}:${
+        parts.find((p) => p.type === "minute")?.value
+    }`;
+    const day = parts.find((p) => p.type === "day")?.value;
+    const month = parts.find((p) => p.type === "month")?.value;
+    const year = parts.find((p) => p.type === "year")?.value;
+
+    return `${time} on ${month} ${day}, ${year}`;
+};
