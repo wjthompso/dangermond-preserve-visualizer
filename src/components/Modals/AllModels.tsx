@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { CombinedData, DataManager } from "../../services/DataManager";
+import { useWaterLevelStore } from "../../stores/useWaterLevelStore"; // Ensure this path is correct and the file exists
 import { TimeSpan } from "../../types/timeSeriesTypes";
 import { filterTimeSeries } from "../../utils/timeSeriesUtils"; // Import the utility
 import RainLevelBarChartModal from "./RainLevelBarChartModal/RainLevelBarChartModal";
@@ -13,6 +14,10 @@ const AllModels: React.FC = () => {
     const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D"); // Initial time span set to "1D"
     const [combinedData, setCombinedData] = useState<CombinedData | null>(null);
     const wellId = "Escondido_5"; // Replace with actual well ID as needed
+
+    const setWaterLevelData = useWaterLevelStore(
+        (state) => state.setWaterLevelData
+    );
 
     useEffect(() => {
         const loadData = async () => {
@@ -40,6 +45,9 @@ const AllModels: React.FC = () => {
                 timeSpan
             );
 
+            // Store water data in global store for synchronization
+            setWaterLevelData(filteredWaterData);
+
             // Console log the filtered data
             console.log(
                 `Filtered Water Data (${timeSpan}):`,
@@ -47,15 +55,18 @@ const AllModels: React.FC = () => {
             );
             console.log(`Filtered Rain Data (${timeSpan}):`, filteredRainData);
         }
-    }, [combinedData, timeSpan]);
+    }, [combinedData, timeSpan, setWaterLevelData]);
 
     if (!combinedData) {
         return <div>Loading data...</div>;
     }
 
-    // For now, continue using mock data for child components
-    const mockXData = ["10", "11", "12", "13", "14", "15", "16", "17"];
-    const mockYData = [121, 122, 121, 125, 130, 124.8, 123, 126];
+    // Pass filtered data to child components
+    const filteredWaterData = filterTimeSeries(
+        combinedData.waterLevel,
+        timeSpan
+    );
+    const filteredRainData = filterTimeSeries(combinedData.rainLevel, timeSpan);
 
     return (
         <div
@@ -109,15 +120,19 @@ const AllModels: React.FC = () => {
                     className="w-[378px] h-[410px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20"
                 >
                     <WaterLevelLineChartModal
-                        xData={mockXData}
-                        yData={mockYData}
+                        waterData={filteredWaterData}
+                        timeSpan={timeSpan}
+                        setTimeSpan={setTimeSpan}
                     />
                 </div>
                 <div
                     id="rain-level-bar-chart-modal-container"
                     className="w-[378px] h-[376px] p-7 rounded-xl bg-gradient-to-br from-black/70 to-black/50 text-white flex items-center justify-center backdrop-blur-md shadow-lg border border-white/20"
                 >
-                    <RainLevelBarChartModal />
+                    <RainLevelBarChartModal
+                        rainData={filteredRainData}
+                        timeSpan={timeSpan}
+                    />
                 </div>
             </div>
         </div>

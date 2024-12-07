@@ -1,73 +1,53 @@
-// WaterLevelChart.tsx
+// src/components/Modals/WaterLevelLineChartModal/WaterLevelLineChartModal.tsx
 
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
-import { XAXisOption } from "echarts/types/dist/shared";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
+import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
 
-interface WaterLevelChartProps {
-    xData: string[];
-    yData: number[];
-    initialTimeSpan?: string;
-    paddingRatio?: number;
+interface WaterLevelLineChartModalProps {
+    waterData: TimeSeriesData[];
+    timeSpan: TimeSpan;
+    setTimeSpan: (span: TimeSpan) => void;
 }
 
-const calculateYAxisLimits = (yData: number[], paddingRatio: number = 0.2) => {
-    if (yData.length === 0) return { min: 0, max: 1 };
-    const minVal = Math.min(...yData);
-    const maxVal = Math.max(...yData);
-    const range = maxVal - minVal || 1;
-    const padding = range * paddingRatio * 0.5;
-    return {
-        min: minVal - padding,
-        max: maxVal + padding,
-    };
-};
-
-const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
-    xData,
-    yData,
-    initialTimeSpan = "1D",
-    paddingRatio = 0.2,
+const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
+    waterData,
+    timeSpan,
+    setTimeSpan,
 }) => {
     const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
 
-    // Track time span locally
-    const [selectedTimeSpan, setSelectedTimeSpan] =
-        useState<string>(initialTimeSpan);
-
-    // Access store setters without subscribing in the render
-    const setWaterLevel = useWaterLevelStore.getState().setWaterLevel;
     const setHoveredAxisIndex =
         useWaterLevelStore.getState().setHoveredAxisIndex;
-
-    // Refs to keep track of current hoveredAxisIndex and waterLevel
-    const hoveredAxisIndexRef = useRef<number | null>(
-        useWaterLevelStore.getState().hoveredAxisIndex
-    );
-    const waterLevelRef = useRef<number>(
-        useWaterLevelStore.getState().waterLevel
+    const setHoveredDateTime = useWaterLevelStore.getState().setHoveredDateTime;
+    const hoveredDateTime = useWaterLevelStore(
+        (state) => state.hoveredDateTime
     );
 
-    // Flag to distinguish between user and programmatic updates
-    const isProgrammaticUpdate = useRef(false);
+    const { min, max } = useMemo(() => {
+        if (waterData.length === 0) return { min: 0, max: 1 };
+        const minVal = Math.min(...waterData.map((d) => d.value));
+        const maxVal = Math.max(...waterData.map((d) => d.value));
+        const range = maxVal - minVal || 1;
+        const padding = range * 0.2 * 0.5;
+        return {
+            min: minVal - padding,
+            max: maxVal + padding,
+        };
+    }, [waterData]);
 
-    const { min, max } = calculateYAxisLimits(yData, paddingRatio);
-
-    const calculateInterval = (min: number, max: number) => {
+    const interval = useMemo(() => {
         const range = max - min;
         if (range <= 12) return 2;
         if (range <= 50) return 5;
         if (range <= 100) return 10;
         if (range <= 500) return 50;
         return 100;
-    };
+    }, [min, max]);
 
-    const interval = calculateInterval(min, max);
-
-    // Memoize option to prevent unnecessary recalculations
     const option: echarts.EChartsOption = useMemo(
         () => ({
             tooltip: {
@@ -99,7 +79,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
             xAxis: {
                 type: "category",
                 boundaryGap: false,
-                data: xData,
+                data: waterData.map((d) => d.dateTime),
                 axisLine: { show: true, lineStyle: { color: "#555" } },
                 axisLabel: { color: "#aaa" },
             },
@@ -112,7 +92,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 axisLine: { show: true, lineStyle: { color: "#555" } },
                 axisLabel: {
                     color: "#aaa",
-                    formatter: (value) =>
+                    formatter: (value: number) =>
                         value === max || value === min
                             ? ""
                             : Math.round(value).toString(),
@@ -124,7 +104,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
             },
             series: [
                 {
-                    data: yData.map((d) => Number(d)), // Ensure numeric
+                    data: waterData.map((d) => Number(d.value)),
                     type: "line",
                     areaStyle: {
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -150,96 +130,72 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 containLabel: true,
             },
         }),
-        [xData, yData, min, max, interval]
+        [waterData, min, max, interval]
     );
 
-    // Handle chart readiness
+    /**
+     * Handles chart readiness by storing the chart instance.
+     * @param chart - The ECharts instance.
+     */
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
     };
 
-    // Function to update water level and date display
+    /**
+     * Function to update water level and date display.
+     * @param xIndex - The index of the hovered data point.
+     */
     const updateWaterLevelAndDate = (xIndex: number) => {
-        const newLevel = yData[xIndex] ?? 0;
-        if (newLevel !== waterLevelRef.current) {
-            waterLevelRef.current = newLevel;
-            setWaterLevel(newLevel);
-        }
+        const newLevel = waterData[xIndex]?.value ?? 0;
+        useWaterLevelStore.getState().setWaterLevel(newLevel);
 
-        const xValue = xData[xIndex];
-        const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+        const xValue = waterData[xIndex]?.dateTime || "";
+        const formattedDate = `<strong>${xValue}</strong>`;
         if (currentDateRef.current) {
             currentDateRef.current.innerHTML = formattedDate;
         }
     };
 
     useEffect(() => {
-        // Single listener for all state changes
-        const unsub = useWaterLevelStore.subscribe((state, previousState) => {
-            const { hoveredAxisIndex, waterLevel } = state;
-            const prevHovered = previousState.hoveredAxisIndex;
-            const prevWaterLevel = previousState.waterLevel;
-
-            // Handle hoveredAxisIndex change
-            if (hoveredAxisIndex !== prevHovered) {
+        // Subscribe to global store changes
+        const unsub = useWaterLevelStore.subscribe(
+            (state) => state.hoveredAxisIndex,
+            (hovered: number | null) => {
                 if (!chartRef.current) return;
 
-                hoveredAxisIndexRef.current = hoveredAxisIndex;
-                isProgrammaticUpdate.current = true;
-
-                if (hoveredAxisIndex !== null) {
-                    // Show tooltip at hoveredAxisIndex
+                if (hovered !== null && hovered < waterData.length) {
                     chartRef.current.dispatchAction({
                         type: "showTip",
                         seriesIndex: 0,
-                        dataIndex: hoveredAxisIndex,
+                        dataIndex: hovered,
                     });
 
-                    // Update water level and date for this hovered index
-                    updateWaterLevelAndDate(hoveredAxisIndex);
+                    updateWaterLevelAndDate(hovered);
                 } else {
-                    // Hide tooltip
                     chartRef.current.dispatchAction({ type: "hideTip" });
+                    if (currentDateRef.current) {
+                        currentDateRef.current.innerHTML = "No data hovered";
+                    }
                 }
-
-                isProgrammaticUpdate.current = false;
             }
-
-            // Handle waterLevel change if needed
-            if (waterLevel !== prevWaterLevel) {
-                waterLevelRef.current = waterLevel;
-                // If you have additional side-effects for waterLevel changes, handle them here
-            }
-        });
+        );
 
         return () => {
             unsub();
         };
-    }, [xData, yData, setWaterLevel]);
+    }, [waterData]);
 
+    /**
+     * Handles axis pointer updates (hover events).
+     * Sets the hovered index and corresponding dateTime in the global store.
+     * @param params - ECharts event parameters.
+     */
     const handleAxisPointerUpdate = (params: any) => {
-        // If this is a programmatic update, skip updating hoveredAxisIndex
-        if (isProgrammaticUpdate.current) return;
-
-        if (params?.axesInfo?.[0] && chartRef.current) {
-            const chartOptions = chartRef.current.getOption();
-            if (Array.isArray(chartOptions.xAxis)) {
-                const xAxis = chartOptions.xAxis[0];
-                if (xAxis.type === "category" && "data" in xAxis) {
-                    const xAxisData = (
-                        xAxis as XAXisOption & { data: string[] }
-                    ).data;
-                    const xIndex = params.axesInfo[0].value;
-
-                    // Update hoveredAxisIndex only if different
-                    if (hoveredAxisIndexRef.current !== xIndex) {
-                        hoveredAxisIndexRef.current = xIndex;
-                        setHoveredAxisIndex(xIndex);
-                    }
-
-                    // Update water level and date display
-                    updateWaterLevelAndDate(xIndex);
-                }
+        if (params?.axesInfo?.[0]) {
+            const xIndex = params.axesInfo[0].value;
+            if (xIndex !== null && xIndex >= 0 && xIndex < waterData.length) {
+                setHoveredAxisIndex(xIndex);
+                setHoveredDateTime(waterData[xIndex].dateTime);
             }
         }
     };
@@ -259,29 +215,29 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 id="time-span-picker"
                 className="flex justify-between gap-2 pb-[8px] border-b-[0.6px] border-[#454545]"
             >
-                {["1D", "1W", "1M", "3M", "6M", "1Y", "2Y", "3Y"].map(
-                    (span) => (
-                        <button
-                            id={`time-span-${span}`}
-                            key={span}
-                            onClick={() => setSelectedTimeSpan(span)}
-                            className={`w-7 h-7 text-sm font-semibold rounded cursor-pointer ${
-                                selectedTimeSpan === span
-                                    ? "bg-[#585858] text-white"
-                                    : " text-white hover:bg-gray-600"
-                            }`}
-                        >
-                            {span}
-                        </button>
-                    )
-                )}
+                {["1D", "1W", "3M", "6M", "1Y", "2Y", "3Y"].map((span) => (
+                    <button
+                        id={`time-span-${span}`}
+                        key={span}
+                        onClick={() => setTimeSpan(span as TimeSpan)}
+                        className={`w-7 h-7 text-sm font-semibold rounded cursor-pointer ${
+                            timeSpan === span
+                                ? "bg-[#585858] text-white"
+                                : " text-white hover:bg-gray-600"
+                        }`}
+                    >
+                        {span}
+                    </button>
+                ))}
             </div>
             <div
                 id="current-date-display"
                 ref={currentDateRef}
                 className="mt-[0.125rem] text-sm font-medium text-center text-white"
             >
-                10:00 Aug 3, 2024
+                {hoveredDateTime
+                    ? `Date: ${hoveredDateTime}`
+                    : "Hover over the chart"}
             </div>
             <ReactECharts
                 option={option}
@@ -293,4 +249,4 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
     );
 };
 
-export default React.memo(WaterLevelChart);
+export default React.memo(WaterLevelLineChartModal);
