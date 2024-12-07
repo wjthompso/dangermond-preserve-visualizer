@@ -31,44 +31,61 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
 }) => {
     const chartRef = useRef<echarts.ECharts>(null);
     const currentDateRef = useRef<HTMLDivElement>(null);
+
+    // Track time span locally
     const [selectedTimeSpan, setSelectedTimeSpan] =
         useState<string>(initialTimeSpan);
 
-    const { hoveredAxisIndex, setWaterLevel, setHoveredAxisIndex } =
-        useWaterLevelStore.getState();
+    // Access Zustand store values and setters
+    const hoveredAxisIndex = useWaterLevelStore(
+        (state) => state.hoveredAxisIndex
+    );
+    const waterLevel = useWaterLevelStore((state) => state.waterLevel);
+    const setWaterLevel = useWaterLevelStore((state) => state.setWaterLevel);
+    const setHoveredAxisIndex = useWaterLevelStore(
+        (state) => state.setHoveredAxisIndex
+    );
 
-    // This ref tracks whether the next axisPointer event is programmatic
+    // Flag to distinguish between user and programmatic updates
     const isProgrammaticUpdate = useRef(false);
 
-    // When hoveredAxisIndex changes, showTip on this chart, but mark it as programmatic
+    // When hoveredAxisIndex changes, programmatically update chart tooltip
     useEffect(() => {
-        const unsub = useWaterLevelStore.subscribe((state) => {
-            const hovered = state.hoveredAxisIndex;
-            if (chartRef.current) {
-                // Programmatic update starts
-                isProgrammaticUpdate.current = true;
-                if (hovered !== null) {
-                    chartRef.current.dispatchAction({
-                        type: "showTip",
-                        seriesIndex: 0,
-                        dataIndex: hovered,
-                    });
-                } else {
-                    chartRef.current.dispatchAction({ type: "hideTip" });
-                }
-                // Programmatic update ends after showTip/hideTip call
-                isProgrammaticUpdate.current = false;
+        if (!chartRef.current) return;
+
+        isProgrammaticUpdate.current = true;
+        if (hoveredAxisIndex !== null) {
+            // Show tooltip at hoveredAxisIndex
+            chartRef.current.dispatchAction({
+                type: "showTip",
+                seriesIndex: 0,
+                dataIndex: hoveredAxisIndex,
+            });
+
+            // Update water level only if changed
+            const newLevel = yData[hoveredAxisIndex] ?? 0;
+            if (newLevel !== waterLevel) {
+                setWaterLevel(newLevel);
             }
-        });
-        return unsub;
-    }, []);
+
+            // Update date display
+            const xValue = xData[hoveredAxisIndex];
+            if (currentDateRef.current) {
+                currentDateRef.current.innerHTML = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+            }
+        } else {
+            // Hide tooltip
+            chartRef.current.dispatchAction({ type: "hideTip" });
+        }
+        isProgrammaticUpdate.current = false;
+    }, [hoveredAxisIndex, yData, xData, waterLevel, setWaterLevel]);
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
     };
 
     const handleAxisPointerUpdate = (params: any) => {
-        // If this is a programmatic update, do not update hoveredAxisIndex
+        // If this is a programmatic update, do not modify the store
         if (isProgrammaticUpdate.current) return;
 
         if (params?.axesInfo?.[0] && chartRef.current) {
@@ -80,17 +97,22 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                         xAxis as XAXisOption & { data: string[] }
                     ).data;
                     const xIndex = params.axesInfo[0].value;
-                    const xValue = xAxisData[xIndex] || xIndex;
 
+                    // Update hoveredAxisIndex only if different
                     if (hoveredAxisIndex !== xIndex) {
                         setHoveredAxisIndex(xIndex);
                     }
 
+                    // Update water level only if it changes here due to user hover in this chart
                     const hoverValue = yData[xIndex] ?? 0;
-                    setWaterLevel(hoverValue);
+                    if (hoverValue !== waterLevel) {
+                        setWaterLevel(hoverValue);
+                    }
 
-                    const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+                    // Update date display
+                    const xValue = xAxisData[xIndex] || xIndex;
                     if (currentDateRef.current) {
+                        const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
                         currentDateRef.current.innerHTML = formattedDate;
                     }
                 }
@@ -124,7 +146,6 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
                 },
                 label: {
                     show: true,
-                    // Ensure formatting doesn't cause loops; just return numeric value
                     formatter: (params: any) => {
                         const val = Number(params.seriesData[0].data);
                         return isNaN(val) ? "" : `${val} ft`;
@@ -167,7 +188,7 @@ const WaterLevelChart: React.FC<WaterLevelChartProps> = ({
         },
         series: [
             {
-                data: yData.map((d) => Number(d)), // Ensure numeric
+                data: yData.map((d) => Number(d)),
                 type: "line",
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
