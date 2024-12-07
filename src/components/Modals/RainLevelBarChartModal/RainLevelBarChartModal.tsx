@@ -1,10 +1,26 @@
 // RainLevelBarChartModal.tsx
 
 import * as echarts from "echarts";
+import { CategoryAxisOption, XAXisOption } from "echarts"; // Adjust import path if necessary
 import ReactECharts from "echarts-for-react";
-import { XAXisOption } from "echarts/types/dist/shared";
 import React, { useEffect, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
+
+// Define a specific type for your chart option
+type RainLevelBarChartOption = echarts.EChartsOption & {
+    xAxis: XAXisOption[];
+    series: echarts.SeriesOption[];
+};
+
+// Type guard for category xAxis
+function isCategoryXAXisOption(
+    option: XAXisOption
+): option is CategoryAxisOption {
+    return (
+        option.type === "category" &&
+        Array.isArray((option as CategoryAxisOption).data)
+    );
+}
 
 const RainLevelBarChartModal: React.FC = () => {
     const chartRef = useRef<echarts.ECharts>(null);
@@ -22,24 +38,55 @@ const RainLevelBarChartModal: React.FC = () => {
     // Flag to distinguish between user and programmatic updates
     const isProgrammaticUpdate = useRef(false);
 
-    // When hoveredAxisIndex changes, showTip on this chart
+    // When hoveredAxisIndex changes, showTip on this chart and update subtitle
     useEffect(() => {
-        const unsub = useWaterLevelStore.subscribe((state) => {
-            const hovered: number | null = state.hoveredAxisIndex;
-            if (!chartRef.current) return;
+        const unsub = useWaterLevelStore.subscribe(
+            (state) => state.hoveredAxisIndex,
+            (hovered: number | null) => {
+                if (!chartRef.current) return;
 
-            isProgrammaticUpdate.current = true;
-            if (hovered !== null) {
-                chartRef.current.dispatchAction({
-                    type: "showTip",
-                    seriesIndex: 0,
-                    dataIndex: hovered,
-                });
-            } else {
-                chartRef.current.dispatchAction({ type: "hideTip" });
+                isProgrammaticUpdate.current = true;
+                if (hovered !== null) {
+                    // Show tooltip at hoveredAxisIndex
+                    chartRef.current.dispatchAction({
+                        type: "showTip",
+                        seriesIndex: 0,
+                        dataIndex: hovered,
+                    });
+
+                    // Safely access xAxisData with type assertions
+                    const option =
+                        chartRef.current.getOption() as RainLevelBarChartOption;
+                    const xAxisOption =
+                        option.xAxis && Array.isArray(option.xAxis)
+                            ? option.xAxis[0]
+                            : null;
+
+                    if (xAxisOption && isCategoryXAXisOption(xAxisOption)) {
+                        const xAxisData = xAxisOption.data as string[];
+                        const xValue = xAxisData[hovered] || hovered.toString();
+                        const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+                        if (currentDateRef.current) {
+                            currentDateRef.current.innerHTML = formattedDate;
+                        }
+                    } else {
+                        // Fallback if xAxis data is not as expected
+                        if (currentDateRef.current) {
+                            currentDateRef.current.innerHTML =
+                                "Invalid data hovered";
+                        }
+                    }
+                } else {
+                    // Hide tooltip
+                    chartRef.current.dispatchAction({ type: "hideTip" });
+                    // Optionally, reset the subtitle when no hover
+                    if (currentDateRef.current) {
+                        currentDateRef.current.innerHTML = "No data hovered";
+                    }
+                }
+                isProgrammaticUpdate.current = false;
             }
-            isProgrammaticUpdate.current = false;
-        });
+        );
 
         return () => {
             unsub();
@@ -55,27 +102,28 @@ const RainLevelBarChartModal: React.FC = () => {
         if (isProgrammaticUpdate.current) return;
 
         if (params?.axesInfo?.[0] && chartRef.current) {
-            const chartOptions = chartRef.current.getOption();
-            if (Array.isArray(chartOptions.xAxis)) {
-                const xAxis = chartOptions.xAxis[0];
-                if (xAxis.type === "category" && "data" in xAxis) {
-                    const xAxisData = (
-                        xAxis as XAXisOption & { data: string[] }
-                    ).data;
-                    const xIndex = params.axesInfo[0].value;
-                    const xValue = xAxisData[xIndex] || xIndex;
+            const option =
+                chartRef.current.getOption() as RainLevelBarChartOption;
+            const xAxisOption =
+                option.xAxis && Array.isArray(option.xAxis)
+                    ? option.xAxis[0]
+                    : null;
 
-                    // Update hoveredAxisIndex only if different
-                    if (hoveredAxisIndexRef.current !== xIndex) {
-                        hoveredAxisIndexRef.current = xIndex;
-                        setHoveredAxisIndex(xIndex);
-                    }
+            if (xAxisOption && isCategoryXAXisOption(xAxisOption)) {
+                const xAxisData = xAxisOption.data as string[];
+                const xIndex = params.axesInfo[0].value;
+                const xValue = xAxisData[xIndex] || xIndex.toString();
 
-                    // Update date display
-                    const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
-                    if (currentDateRef.current) {
-                        currentDateRef.current.innerHTML = formattedDate;
-                    }
+                // Update hoveredAxisIndex only if different
+                if (hoveredAxisIndexRef.current !== xIndex) {
+                    hoveredAxisIndexRef.current = xIndex;
+                    setHoveredAxisIndex(xIndex);
+                }
+
+                // Update date display
+                const formattedDate = `<strong>${xValue}:00</strong> on Aug 3, 2024`;
+                if (currentDateRef.current) {
+                    currentDateRef.current.innerHTML = formattedDate;
                 }
             }
         }
@@ -94,6 +142,7 @@ const RainLevelBarChartModal: React.FC = () => {
                 },
                 label: {
                     show: true,
+                    // Ensure formatting doesn't cause loops; just return numeric value
                     formatter: (params: any) => {
                         const val = Number(params.seriesData[0].data);
                         return isNaN(val) ? "" : `${val} in`;
