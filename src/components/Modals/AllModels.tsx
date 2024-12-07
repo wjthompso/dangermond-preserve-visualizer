@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { CombinedData, DataManager } from "../../services/DataManager";
 import { TimeSpan } from "../../types/timeSeriesTypes";
+import { filterTimeSeries } from "../../utils/timeSeriesUtils"; // Import the utility
 import RainLevelBarChartModal from "./RainLevelBarChartModal/RainLevelBarChartModal";
 import WaterLevelLineChartModal from "./WaterLevelLineChartModal/WaterLevelLineChartModal";
 import WaterLevelVisualizationModal from "./WaterLevelVisualizationModal/WaterLevelVisualizationModal";
 import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
 
 const AllModels: React.FC = () => {
-    const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D");
+    const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D"); // Initial time span set to "1D"
     const [combinedData, setCombinedData] = useState<CombinedData | null>(null);
     const wellId = "Escondido_5"; // Replace with actual well ID as needed
 
@@ -27,11 +28,32 @@ const AllModels: React.FC = () => {
         loadData();
     }, [wellId]);
 
+    useEffect(() => {
+        if (combinedData) {
+            // Apply filtering based on the selected timeSpan
+            const filteredWaterData = filterTimeSeries(
+                combinedData.waterLevel,
+                timeSpan
+            );
+            const filteredRainData = filterTimeSeries(
+                combinedData.rainLevel,
+                timeSpan
+            );
+
+            // Console log the filtered data
+            console.log(
+                `Filtered Water Data (${timeSpan}):`,
+                filteredWaterData
+            );
+            console.log(`Filtered Rain Data (${timeSpan}):`, filteredRainData);
+        }
+    }, [combinedData, timeSpan]);
+
     if (!combinedData) {
         return <div>Loading data...</div>;
     }
 
-    // For now, use mock data or pass data to children later
+    // For now, continue using mock data for child components
     const mockXData = ["10", "11", "12", "13", "14", "15", "16", "17"];
     const mockYData = [121, 122, 121, 125, 130, 124.8, 123, 126];
 
