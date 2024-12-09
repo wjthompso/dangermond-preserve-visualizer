@@ -3,18 +3,8 @@ import ReactECharts from "echarts-for-react";
 import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
+import { xAxisFormatter } from "../../../utils/formatTimestamps";
 import { formatTimestamp } from "../../../utils/timeSeriesUtils";
-
-// Custom formatters for x-axis labels
-const formatHourly = (dateTimeString: string): string => {
-    const date = new Date(dateTimeString);
-    return `${date.getHours().toString().padStart(2, "0")}:00`; // e.g., "11:00", "12:00"
-};
-
-const formatDaily = (dateTimeString: string): string => {
-    const date = new Date(dateTimeString);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }); // e.g., "Nov 1"
-};
 
 interface RainLevelBarChartModalProps {
     waterData: TimeSeriesData[]; // Needed to find hovered timestamp from line chart
@@ -93,13 +83,6 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
             };
         }
 
-        const xAxisFormatter =
-            timeSpan === "1D"
-                ? formatHourly // Format for 1-day view
-                : timeSpan === "1W"
-                ? formatDaily // Format for 1-week view
-                : undefined; // Default for other views
-
         return {
             tooltip: {
                 trigger: "axis",
@@ -135,7 +118,9 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                     axisLabel: {
                         color: "#aaa",
                         formatter: (value: string) =>
-                            xAxisFormatter ? xAxisFormatter(value) : value,
+                            xAxisFormatter
+                                ? xAxisFormatter(value, timeSpan)
+                                : value,
                     },
                 },
             ],
