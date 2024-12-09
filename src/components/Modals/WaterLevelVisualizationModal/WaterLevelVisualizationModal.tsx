@@ -201,11 +201,11 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         "url('/assets/rock-texture-semi-transparent-overlay.png')",
                                     backgroundSize: "cover",
                                     backgroundBlendMode: "overlay",
-                                    border:
+                                    outline:
                                         hoveredType === layer.type
                                             ? "1px solid white"
                                             : "none",
-                                    transition: "opacity 0.3s, border 0.1s",
+                                    transition: "opacity 0.3s, outline 0.1s",
                                 }}
                             ></div>
                         );
@@ -301,11 +301,11 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                                         "url('/assets/rock-texture-semi-transparent-overlay.png')",
                                     backgroundSize: "cover",
                                     backgroundBlendMode: "overlay",
-                                    border:
+                                    outline:
                                         hoveredType === layer.type
                                             ? "1px solid white"
                                             : "none",
-                                    transition: "opacity 0.3s, border 0.1s",
+                                    transition: "opacity 0.3s, outline 0.1s",
                                 }}
                             ></div>
                         );
