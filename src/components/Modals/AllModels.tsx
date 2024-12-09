@@ -64,18 +64,33 @@ const AllModels: React.FC = () => {
                         layers={[
                             {
                                 startDepth: 0,
-                                endDepth: 100,
-                                type: "unconsolidated-coarse-grained",
+                                endDepth: 3,
+                                type: "unconsolidated-coarse-and-fine-grained", // "Unconsolidated: Mixture of coarse and fine grained"
                             },
                             {
-                                startDepth: 100,
-                                endDepth: 200,
-                                type: "sedimentary-coarse-and-fine-grained",
+                                startDepth: 3,
+                                endDepth: 9,
+                                type: "sedimentary-fine-grained", // "Consolidated: Fine grained (adobe, shale)"
                             },
                             {
-                                startDepth: 200,
-                                endDepth: 300,
-                                type: "unconsolidated-mostly-fine-grained",
+                                startDepth: 9,
+                                endDepth: 14,
+                                type: "sedimentary-fine-grained", // "Consolidated: Fine grained (clay, shale)"
+                            },
+                            {
+                                startDepth: 14,
+                                endDepth: 22,
+                                type: "sedimentary-fine-grained", // "Consolidated: Fine grained (shale)"
+                            },
+                            {
+                                startDepth: 22,
+                                endDepth: 29,
+                                type: "unconsolidated-fine-grained", // "Unconsolidated: Fine grained (clay)"
+                            },
+                            {
+                                startDepth: 29,
+                                endDepth: 340, // Assuming it continues below 29 ft
+                                type: "sedimentary-fine-grained", // "Consolidated: Fine grained (shale)"
                             },
                         ]}
                         waterLevel={25}

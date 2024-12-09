@@ -15,6 +15,48 @@ const formatDaily = (dateTimeString: string): string => {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }); // e.g., "Nov 1"
 };
 
+const formatWeekly = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString("en-US", { weekday: "short" }); // e.g., "Mon"
+};
+
+const formatMonthly = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date
+        .toLocaleDateString("en-US", {
+            month: "short",
+            year: "2-digit",
+        })
+        .replace(" ", " '"); // e.g., "Apr, '24"
+};
+
+const formatYearly = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date
+        .toLocaleDateString("en-US", {
+            month: "short",
+            year: "2-digit",
+        })
+        .replace(" ", " '"); // e.g., "Apr '24"
+};
+
+const format2Years = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date
+        .toLocaleDateString("en-US", { year: "numeric" })
+        .replace(" ", " '"); // e.g., "2024"
+};
+
+const format3Years = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString("en-US", { year: "numeric" }); // e.g., "2024"
+};
+
+const formatAll = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString("en-US", { year: "numeric" }); // e.g., "2024"
+};
+
 interface WaterLevelLineChartModalProps {
     waterData: TimeSeriesData[];
     rainData: TimeSeriesData[]; // If needed for reference, else can remove
@@ -100,7 +142,19 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                             ? formatHourly(value)
                             : timeSpan === "1W"
                             ? formatDaily(value)
-                            : value, // Default for other time spans
+                            : timeSpan === "3M"
+                            ? formatDaily(value)
+                            : timeSpan === "6M"
+                            ? formatMonthly(value)
+                            : timeSpan === "1Y"
+                            ? formatYearly(value)
+                            : timeSpan === "2Y"
+                            ? format2Years(value)
+                            : timeSpan === "3Y"
+                            ? format3Years(value)
+                            : timeSpan === "ALL"
+                            ? formatAll(value)
+                            : value,
                 },
             },
             yAxis: {
