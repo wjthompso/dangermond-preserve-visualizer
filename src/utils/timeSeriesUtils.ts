@@ -99,5 +99,5 @@ export const formatTimestamp = (dateTimeString: string): string => {
     const month = parts.find((p) => p.type === "month")?.value;
     const year = parts.find((p) => p.type === "year")?.value;
 
-    return `${time} on ${month} ${day}, ${year}`;
+    return `${time} (PDT) on ${month} ${day}, ${year}`;
 };

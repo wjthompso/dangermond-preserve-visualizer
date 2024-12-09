@@ -12,15 +12,15 @@ const MapComponent: React.FC = () => {
         const map = new maplibreGl.Map({
             container: mapContainerRef.current,
             style: "https://api.maptiler.com/maps/hybrid/style.json?key=9NI99sjBP6UPRQHN9Mf7", // Satellite map style from MapTiler (replace with your API key)
-            center: [-120.452712, 34.467165], //
-            zoom: 12,
+            center: [-120.352712, 34.497165], //
+            zoom: 11,
             pitch: 0, // Force the map to always be 2D by setting pitch to 0
             bearing: 0, // Ensure no rotation, keeps the map flat
         });
 
         // Add a marker to the map
         const marker = new maplibreGl.Marker()
-            .setLngLat([-120.452712, 34.467165])
+            .setLngLat([-120.453132886696, 34.5399037605087])
             .addTo(map);
 
         // Add hover state to the marker
