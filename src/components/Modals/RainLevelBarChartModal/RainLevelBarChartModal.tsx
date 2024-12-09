@@ -67,7 +67,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 yAxis: {
                     type: "value",
                     min: 0,
-                    max: Math.max(...rainData.map((d) => d.value)) + 0.5,
+                    max: 1,
                     splitLine: { lineStyle: { color: "#555" } },
                     axisLine: { lineStyle: { color: "#555" } },
                     axisLabel: { color: "#aaa" },
@@ -126,8 +126,8 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
             ],
             yAxis: {
                 type: "value",
-                min: Math.min(...rainData.map((d) => d.value)) - 0.5,
-                max: Math.max(...rainData.map((d) => d.value)) + 0.5,
+                min: 0, // Zero starts at the bottom of the Y-axis
+                max: Math.max(...rainData.map((d) => d.value)) + 0.5, // Add padding to the top
                 splitNumber: 5,
                 interval: 0.5,
                 axisLine: { lineStyle: { color: "#555" } },
