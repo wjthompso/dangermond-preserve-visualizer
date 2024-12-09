@@ -5,6 +5,16 @@ import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
 import { formatTimestamp } from "../../../utils/timeSeriesUtils";
 
+const formatHourly = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return `${date.getHours().toString().padStart(2, "0")}:00`; // e.g., "11:00", "12:00"
+};
+
+const formatDaily = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }); // e.g., "Nov 1"
+};
+
 interface WaterLevelLineChartModalProps {
     waterData: TimeSeriesData[];
     rainData: TimeSeriesData[]; // If needed for reference, else can remove
@@ -80,10 +90,18 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
             },
             xAxis: {
                 type: "category",
-                boundaryGap: false,
+                boundaryGap: true,
                 data: waterData.map((d) => d.dateTime),
                 axisLine: { show: true, lineStyle: { color: "#555" } },
-                axisLabel: { color: "#aaa" },
+                axisLabel: {
+                    color: "#aaa",
+                    formatter: (value: string) =>
+                        timeSpan === "1D"
+                            ? formatHourly(value)
+                            : timeSpan === "1W"
+                            ? formatDaily(value)
+                            : value, // Default for other time spans
+                },
             },
             yAxis: {
                 type: "value",
@@ -91,6 +109,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                 max,
                 splitNumber: 5,
                 interval: interval,
+                inverse: true,
                 axisLine: { show: true, lineStyle: { color: "#555" } },
                 axisLabel: {
                     color: "#aaa",
@@ -109,6 +128,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                     data: waterData.map((d) => d.value),
                     type: "line",
                     areaStyle: {
+                        origin: "end", // Ensures the fill is below the line with an inverted Y-axis
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                             { offset: 0, color: "rgba(90, 153, 255, 1)" },
                             { offset: 1, color: "rgba(90, 153, 255, 0)" },
@@ -124,6 +144,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                     },
                 },
             ],
+
             grid: {
                 left: "0%",
                 right: "2%",
@@ -132,7 +153,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                 containLabel: true,
             },
         }),
-        [waterData, min, max, interval]
+        [waterData, min, max, interval, timeSpan]
     );
 
     const handleChartReady = (chart: echarts.ECharts) => {

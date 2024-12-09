@@ -1,15 +1,20 @@
-// src/components/Modals/RainLevelBarChartModal/RainLevelBarChartModal.tsx
-
 import * as echarts from "echarts";
 import ReactECharts from "echarts-for-react";
-import type {
-    SeriesOption,
-    XAXisComponentOption,
-} from "echarts/types/dist/shared";
 import React, { useEffect, useMemo, useRef } from "react";
 import { useWaterLevelStore } from "../../../stores/useWaterLevelStore";
 import { TimeSeriesData, TimeSpan } from "../../../types/timeSeriesTypes";
 import { formatTimestamp } from "../../../utils/timeSeriesUtils";
+
+// Custom formatters for x-axis labels
+const formatHourly = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return `${date.getHours().toString().padStart(2, "0")}:00`; // e.g., "11:00", "12:00"
+};
+
+const formatDaily = (dateTimeString: string): string => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }); // e.g., "Nov 1"
+};
 
 interface RainLevelBarChartModalProps {
     waterData: TimeSeriesData[]; // Needed to find hovered timestamp from line chart
@@ -44,11 +49,6 @@ function findClosestTimestamp(
     return { index: closestIndex, data: closest };
 }
 
-type RainLevelBarChartOption = echarts.EChartsOption & {
-    xAxis: XAXisComponentOption[];
-    series: SeriesOption[];
-};
-
 const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
     waterData,
     rainData,
@@ -63,7 +63,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
         useWaterLevelStore.getState().setHoveredAxisIndex;
     const isProgrammaticUpdate = useRef(false);
 
-    const option: RainLevelBarChartOption = useMemo(() => {
+    const option = useMemo(() => {
         if (rainData.length === 0) {
             return {
                 xAxis: [
@@ -77,7 +77,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 yAxis: {
                     type: "value",
                     min: 0,
-                    max: 1,
+                    max: Math.max(...rainData.map((d) => d.value)) + 0.5,
                     splitLine: { lineStyle: { color: "#555" } },
                     axisLine: { lineStyle: { color: "#555" } },
                     axisLabel: { color: "#aaa" },
@@ -92,6 +92,13 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 },
             };
         }
+
+        const xAxisFormatter =
+            timeSpan === "1D"
+                ? formatHourly // Format for 1-day view
+                : timeSpan === "1W"
+                ? formatDaily // Format for 1-week view
+                : undefined; // Default for other views
 
         return {
             tooltip: {
@@ -125,7 +132,11 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                     type: "category",
                     data: rainData.map((d) => d.dateTime),
                     axisLine: { lineStyle: { color: "#555" } },
-                    axisLabel: { color: "#aaa" },
+                    axisLabel: {
+                        color: "#aaa",
+                        formatter: (value: string) =>
+                            xAxisFormatter ? xAxisFormatter(value) : value,
+                    },
                 },
             ],
             yAxis: {
@@ -162,7 +173,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
                 containLabel: true,
             },
         };
-    }, [rainData]);
+    }, [rainData, timeSpan]);
 
     const handleChartReady = (chart: echarts.ECharts) => {
         chartRef.current = chart;
@@ -231,7 +242,6 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
         ) {
             const xIndex = params.axesInfo[0].value;
             if (xIndex !== null && xIndex >= 0 && xIndex < rainData.length) {
-                // Rain chart hovered a certain rain timestamp, find closest in waterData
                 const refTime = new Date(rainData[xIndex].dateTime);
                 const closestWater = findClosestTimestamp(waterData, refTime);
                 if (closestWater) {
@@ -245,9 +255,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
 
     return (
         <div className="w-full max-w-xl p-0 mx-auto rounded-lg">
-            <h3 className="mb-1 text-xl font-bold text-white">
-                Rain Level (in)
-            </h3>
+            <h3 className="mb-1 text-xl font-bold text-white">Rainfall (in)</h3>
             <div
                 id="current-date-display"
                 ref={currentDateRef}
