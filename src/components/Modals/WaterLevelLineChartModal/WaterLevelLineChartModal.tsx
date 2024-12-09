@@ -44,6 +44,11 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
 
     const interval = useMemo(() => {
         const range = max - min;
+        if (range <= 0.1) return 0.01;
+        if (range <= 1) return 0.1;
+        if (range <= 2) return 0.5;
+        if (range <= 5) return 1;
+        if (range <= 10) return 2;
         if (range <= 12) return 2;
         if (range <= 50) return 5;
         if (range <= 100) return 10;
@@ -103,6 +108,10 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
                     formatter: (value: number) =>
                         value === max || value === min
                             ? ""
+                            : interval < 0.1
+                            ? value.toFixed(2)
+                            : interval < 1
+                            ? value.toFixed(1)
                             : Math.round(value).toString(),
                 },
                 splitLine: {
