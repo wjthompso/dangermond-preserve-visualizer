@@ -25,11 +25,12 @@ const lithologyColors: Record<string, string> = {
     "unconsolidated-coarse-and-fine-grained": "bg-[#9E3D01]",
     "unconsolidated-mostly-fine-grained": "bg-[#D75300]",
     "unconsolidated-fine-grained": "bg-[#FF7E4F]",
-    "sedimentary-coarse-grained": "bg-[#141414]",
-    "sedimentary-mostly-coarse-grained": "bg-[#2F2F2F]",
-    "sedimentary-coarse-and-fine-grained": "bg-[#616161]",
-    "sedimentary-mostly-fine-grained": "bg-[#9A9A9A]",
-    "sedimentary-fine-grained": "bg-[#D5D5D5]",
+    // Updated sedimentary colors
+    "sedimentary-coarse-grained": "bg-[#610100]",
+    "sedimentary-mostly-coarse-grained": "bg-[#AE0C0C]",
+    "sedimentary-coarse-and-fine-grained": "bg-[#FF0000]",
+    "sedimentary-mostly-fine-grained": "bg-[#FF413B]",
+    "sedimentary-fine-grained": "bg-[#FE9390]",
     "other-till": "bg-[#FF0084]",
     "other-carbonate": "bg-[#41FDFE]",
     "other-volcanic": "bg-[#45BE44]",
@@ -147,6 +148,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
         return acc;
     }, {});
 
+    // Calculate the height of the water column
+    const waterColumnHeightPercentage =
+        ((maxDepth - waterLevel) / maxDepth) * 100;
+
     return (
         <div
             id="water-level-visualization-content"
@@ -158,14 +163,14 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                 className="flex items-center justify-center h-[615px] w-[100px] relative"
             >
                 {/* Y-Axis Labels */}
-                <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col-reverse text-gray-400 text-[11px] -ml-6">
+                <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col text-gray-400 text-[11px] -ml-6">
                     {labels.map((label, index) => (
                         <div
                             key={index}
                             className="absolute right-0 text-right"
                             style={{
-                                bottom: `${(label / maxDepth) * 100}%`,
-                                transform: "translateY(50%)",
+                                top: `${(label / maxDepth) * 100}%`,
+                                transform: "translateY(-50%)",
                             }}
                         >
                             {label}
@@ -207,12 +212,13 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                     })}
                 </div>
 
-                {/* Water Level */}
-                <div className="relative flex flex-col-reverse w-[3.2rem] h-full">
+                {/* Water Column */}
+                <div className="relative w-[3.2rem] h-full">
+                    {/* Water portion (at the bottom) */}
                     <div
-                        className="relative flex items-center justify-center text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
+                        className="absolute bottom-0 left-0 w-full text-sm text-white bg-gradient-to-t to-[#5E9BDC] from-[#1366C0] overflow-hidden transition-all duration-700 ease-in-out"
                         style={{
-                            height: `${(waterLevel / maxDepth) * 100}%`,
+                            height: `${waterColumnHeightPercentage}%`,
                         }}
                     >
                         <div
@@ -231,16 +237,16 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                     <div
                         className="absolute w-full transition-all duration-700 ease-in-out -translate-x-1/2 left-1/2"
                         style={{
-                            bottom: `calc(${
+                            top: `calc(${
                                 (waterLevel / maxDepth) * 100
-                            }% + 5px)`,
+                            }% - 2.3rem)`,
                         }}
                     >
                         <div
                             id="water-level-indicator"
                             className="flex flex-col items-center w-full"
                         >
-                            <div className="w-full text-sm font-medium text-center text-[#B4D9FF]">
+                            <div className="w-full text-xs font-medium text-center text-[#B4D9FF] mb-[0.125rem]">
                                 {waterLevel} ft
                             </div>
                             <div
