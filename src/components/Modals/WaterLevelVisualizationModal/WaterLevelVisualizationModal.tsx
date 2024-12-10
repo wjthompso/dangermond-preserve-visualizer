@@ -15,7 +15,6 @@ interface LithologyLegendItem {
 
 interface WellVisualizationProps {
     layers: LithologyLayer[];
-    waterLevel: number; // Water level in feet
     maxDepth: number; // Total depth of the well
 }
 
@@ -112,10 +111,16 @@ const lithologyLegend: LithologyLegendItem[] = [
     },
 ];
 
+/**
+ * Calculates the optimal label interval based on the maximum depth and the maximum number of labels.
+ * @param maxDepth - The total depth of the well.
+ * @param maxLabels - The maximum number of labels to display.
+ * @returns The chosen interval for labels.
+ */
 const calculateLabelIntervals = (maxDepth: number, maxLabels: number = 16) => {
-    const possibleIntervals = [5, 10, 50, 100];
+    const possibleIntervals = [5, 10, 20, 25, 50, 100];
     for (let interval of possibleIntervals) {
-        if (Math.ceil(maxDepth / interval) <= maxLabels) {
+        if (Math.floor(maxDepth / interval) <= maxLabels) {
             return interval;
         }
     }
@@ -134,12 +139,22 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
         ? lithologyLegend.find((item) => item.type === hoveredType)?.group
         : null;
 
+    // Determine the interval for Y-axis labels
     const interval = calculateLabelIntervals(maxDepth);
+
+    // Calculate the maximum label that does not exceed the maxDepth
+    const maxLabel = Math.floor(maxDepth / interval) * interval;
+
+    // Calculate the padding depth below the last label
+    const paddingDepth = maxDepth - maxLabel;
+
+    // Generate labels up to maxLabel
     const labels = Array.from(
-        { length: Math.ceil(maxDepth / interval) + 1 },
+        { length: Math.floor(maxDepth / interval) + 1 },
         (_, i) => i * interval
     );
 
+    // Group legend items by their group name
     const groupedLegend = lithologyLegend.reduce<
         Record<string, LithologyLegendItem[]>
     >((acc, item) => {
@@ -148,9 +163,12 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
         return acc;
     }, {});
 
-    // Calculate the height of the water column
+    // Calculate the height percentage for the water column based on water level
     const waterColumnHeightPercentage =
         ((maxDepth - waterLevel) / maxDepth) * 100;
+
+    // Calculate the padding percentage for Y-axis labels
+    const paddingPercentage = (paddingDepth / maxDepth) * 100;
 
     return (
         <div
@@ -162,8 +180,13 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
                 id="water-level-visualization-graphic"
                 className="flex items-center justify-center h-[615px] w-[100px] relative"
             >
-                {/* Y-Axis Labels */}
-                <div className="absolute left-0 top-0 h-full w-[30px] flex flex-col text-gray-400 text-[11px] -ml-6">
+                {/* Y-Axis Labels with Dynamic Padding */}
+                <div
+                    className="absolute left-0 top-0 h-full w-[30px] flex flex-col text-gray-400 text-[11px] -ml-6"
+                    style={{
+                        paddingBottom: `${paddingPercentage}%`, // Dynamic padding
+                    }}
+                >
                     {labels.map((label, index) => (
                         <div
                             key={index}

@@ -93,8 +93,7 @@ const AllModels: React.FC = () => {
                                 type: "sedimentary-fine-grained", // "Consolidated: Fine grained (shale)"
                             },
                         ]}
-                        waterLevel={25}
-                        maxDepth={300}
+                        maxDepth={340}
                     />
                 </div>
             </div>

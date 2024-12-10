@@ -12,7 +12,7 @@ interface WaterLevelState {
 
 export const useWaterLevelStore = create<WaterLevelState>()(
     subscribeWithSelector((set) => ({
-        waterLevel: 0,
+        waterLevel: 100,
         setWaterLevel: (level: number) => set({ waterLevel: level }),
         hoveredAxisIndex: null,
         setHoveredAxisIndex: (index: number | null) =>
