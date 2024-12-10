@@ -41,6 +41,9 @@ const MapComponent: React.FC = () => {
             bearing: 0, // Ensure no rotation, keeps the map flat
         });
 
+        // Add navigation controls (optional)
+        map.addControl(new maplibreGl.NavigationControl());
+
         // Add markers to the map
         wells.forEach((well) => {
             const marker = new maplibreGl.Marker({ color: "#FF0000" }) // Customize marker appearance
@@ -61,11 +64,32 @@ const MapComponent: React.FC = () => {
                 markerElement.style.borderRadius = "";
             });
 
-            // Add click event to update the selected well ID
+            // Add click event to update the selected well ID and adjust map view
             markerElement.addEventListener("click", () => {
                 setSelectedWellId(well.id);
-                // Optionally, you can also center the map on the clicked marker
-                map.flyTo({ center: well.coordinates, zoom: 13 });
+
+                // Calculate the new center with an offset to prevent the marker from being obscured by the sidebar
+                const offsetX = 100; // Shift left by 100 pixels (I think?)
+                const offsetY = 0; // No vertical shift
+
+                // Get the current pixel position of the clicked well
+                const targetPoint = map.project(well.coordinates);
+
+                // Apply the offset
+                const newPoint = [
+                    targetPoint.x + offsetX,
+                    targetPoint.y + offsetY,
+                ];
+
+                // Convert the new pixel position back to geographic coordinates
+                const newCenter = map.unproject(newPoint as [number, number]);
+
+                // Fly to the new center position with the desired zoom level
+                map.flyTo({
+                    center: newCenter,
+                    zoom: 13,
+                    essential: true, // This animation is considered essential with respect to prefers-reduced-motion
+                });
             });
         });
 
