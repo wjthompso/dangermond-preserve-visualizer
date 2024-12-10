@@ -2,8 +2,26 @@ import React from "react";
 
 interface WellSummaryModalProps {
     title: string;
-    coordinates: string[];
+    coordinates: { latitude: number; longitude: number };
 }
+
+const formatCoordinates = (latitude: number, longitude: number) => {
+    const toDMS = (degree: number) => {
+        const absolute = Math.abs(degree);
+        const degrees = Math.floor(absolute);
+        const minutesNotTruncated = (absolute - degrees) * 60;
+        const minutes = Math.floor(minutesNotTruncated);
+        const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
+        return `${degrees}°${minutes}'${seconds}"`;
+    };
+
+    const latitudeCardinal = latitude >= 0 ? "N" : "S";
+    const longitudeCardinal = longitude >= 0 ? "E" : "W";
+
+    return `${toDMS(latitude)} ${latitudeCardinal}, ${toDMS(
+        Math.abs(longitude)
+    )} ${longitudeCardinal}`;
+};
 
 const WellSummaryModal: React.FC<WellSummaryModalProps> = ({
     title,
@@ -33,7 +51,7 @@ const WellSummaryModal: React.FC<WellSummaryModalProps> = ({
                 id="well-summary-coordinates"
                 className="text-[1.125rem] font-medium text-[#AAAAAA] px-6"
             >
-                {coordinates}
+                {formatCoordinates(coordinates.latitude, coordinates.longitude)}
             </div>
         </div>
     );

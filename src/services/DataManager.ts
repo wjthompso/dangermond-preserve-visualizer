@@ -1,7 +1,12 @@
 // src/services/DataManager.ts
 
 import Papa from "papaparse";
-import { CombinedData, TimeSeriesData } from "../types/timeSeriesTypes";
+import {
+    CombinedData,
+    Coordinates,
+    LithologyLayer,
+    TimeSeriesData,
+} from "../types/timeSeriesTypes";
 
 /**
  * Helper function to standardize dateTime strings to ISO format.
@@ -11,8 +16,6 @@ import { CombinedData, TimeSeriesData } from "../types/timeSeriesTypes";
  * @param type - 'water' or 'rain' to determine the format.
  * @returns ISO-formatted dateTime string.
  */
-
-// No timezone information, so this will be in local time, which for now is PDT
 const standardizeDateTime = (
     dateTime: string,
     type: "water" | "rain"
@@ -20,10 +23,10 @@ const standardizeDateTime = (
     if (type === "rain") {
         // Extract the date part before any parentheses
         const datePart = dateTime.split(" ")[0];
-        return `${datePart}T00:00:00`; // No 'Z', so this stays in local time
+        return `${datePart}T00:00:00Z`; // UTC timezone
     } else if (type === "water") {
-        // Replace space with 'T' to make it ISO-like, but no 'Z'
-        return `${dateTime.replace(" ", "T")}`; // No 'Z'
+        // Replace space with 'T' and append 'Z' for UTC
+        return `${dateTime.replace(" ", "T")}Z`;
     }
     return dateTime; // Fallback to original if type is unknown
 };
@@ -64,7 +67,7 @@ export class DataManager {
                                 row["Date"] &&
                                 row["Rain (in)"] !== undefined
                             ) {
-                                // Escondido_5_rain_level.csv
+                                // Example: "Escondido_5_rain_level.csv"
                                 return {
                                     dateTime: standardizeDateTime(
                                         row["Date"],
@@ -77,7 +80,7 @@ export class DataManager {
                                 row["Date and Time"] &&
                                 row["ft (below ground)"] !== undefined
                             ) {
-                                // Escondido_5_water_level.csv
+                                // Example: "Escondido_5_water_level.csv"
                                 return {
                                     dateTime: standardizeDateTime(
                                         row["Date and Time"],
@@ -103,14 +106,43 @@ export class DataManager {
     }
 
     /**
-     * Fetches both water and rain level data for a given well.
+     * Fetches and parses the lithology JSON file for a given well.
+     * @param wellId - The ID of the well.
+     * @returns A promise that resolves to an object containing coordinates and layers.
+     */
+    static async fetchLithology(
+        wellId: string
+    ): Promise<{ coordinates: Coordinates; layers: LithologyLayer[] }> {
+        const fileName = `${wellId}_lithology.json`;
+        const response = await fetch(`/data/${fileName}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${fileName}`);
+        }
+
+        const data = await response.json();
+
+        // Validate JSON structure
+        if (!data.coordinates || !data.layers) {
+            throw new Error(`Invalid structure in ${fileName}`);
+        }
+
+        return {
+            coordinates: data.coordinates,
+            layers: data.layers,
+        };
+    }
+
+    /**
+     * Fetches both water, rain, and lithology data for a given well.
      * @param wellId - The ID of the well.
      * @returns A promise that resolves to CombinedData.
      */
     static async getCombinedData(wellId: string): Promise<CombinedData> {
-        const [waterLevel, rainLevel] = await Promise.all([
+        const [waterLevel, rainLevel, lithologyData] = await Promise.all([
             this.fetchCSV(wellId, "water"),
             this.fetchCSV(wellId, "rain"),
+            this.fetchLithology(wellId),
         ]);
 
         // Sort data by dateTime
@@ -123,6 +155,11 @@ export class DataManager {
                 new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
         );
 
-        return { waterLevel, rainLevel };
+        return {
+            waterLevel,
+            rainLevel,
+            coordinates: lithologyData.coordinates,
+            layers: lithologyData.layers,
+        };
     }
 }

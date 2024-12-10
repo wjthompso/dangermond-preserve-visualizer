@@ -7,7 +7,20 @@ export interface TimeSeriesData {
     value: number;
 }
 
+export interface LithologyLayer {
+    startDepth: number;
+    endDepth: number;
+    type: string;
+}
+
+export interface Coordinates {
+    latitude: number;
+    longitude: number;
+}
+
 export interface CombinedData {
     waterLevel: TimeSeriesData[];
     rainLevel: TimeSeriesData[];
+    coordinates: Coordinates;
+    layers: LithologyLayer[];
 }
