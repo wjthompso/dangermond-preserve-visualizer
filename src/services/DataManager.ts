@@ -1,7 +1,7 @@
 // src/services/DataManager.ts
 
 import Papa from "papaparse";
-import { TimeSeriesData } from "../types/timeSeriesTypes";
+import { CombinedData, TimeSeriesData } from "../types/timeSeriesTypes";
 
 /**
  * Helper function to standardize dateTime strings to ISO format.
@@ -27,11 +27,6 @@ const standardizeDateTime = (
     }
     return dateTime; // Fallback to original if type is unknown
 };
-
-export interface CombinedData {
-    waterLevel: TimeSeriesData[];
-    rainLevel: TimeSeriesData[];
-}
 
 export class DataManager {
     /**

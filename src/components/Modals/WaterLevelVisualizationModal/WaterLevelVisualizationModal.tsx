@@ -15,7 +15,6 @@ interface LithologyLegendItem {
 
 interface WellVisualizationProps {
     layers: LithologyLayer[];
-    maxDepth: number; // Total depth of the well
 }
 
 const lithologyColors: Record<string, string> = {
@@ -127,10 +126,7 @@ const calculateLabelIntervals = (maxDepth: number, maxLabels: number = 16) => {
     return 100; // Default to 100 if no smaller interval works
 };
 
-const WellVisualization: React.FC<WellVisualizationProps> = ({
-    layers,
-    maxDepth,
-}) => {
+const WellVisualization: React.FC<WellVisualizationProps> = ({ layers }) => {
     const [hoveredType, setHoveredType] = useState<string | null>(null);
     // Subscribe to waterLevel changes. This will cause re-renders only when waterLevel changes.
     const waterLevel = useWaterLevelStore((state) => state.waterLevel);
@@ -140,6 +136,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({
         : null;
 
     // Determine the interval for Y-axis labels
+    const maxDepth = layers[layers.length - 1].endDepth;
     const interval = calculateLabelIntervals(maxDepth);
 
     // Calculate the maximum label that does not exceed the maxDepth

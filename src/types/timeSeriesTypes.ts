@@ -6,3 +6,8 @@ export interface TimeSeriesData {
     dateTime: string; // ISO string, e.g., "2024-11-08T12:49:57Z"
     value: number;
 }
+
+export interface CombinedData {
+    waterLevel: TimeSeriesData[];
+    rainLevel: TimeSeriesData[];
+}

@@ -1,8 +1,9 @@
 // src/components/Modals/AllModels.tsx
 
 import React, { useEffect, useState } from "react";
-import { CombinedData, DataManager } from "../../services/DataManager";
-import { TimeSpan } from "../../types/timeSeriesTypes";
+import { DataManager } from "../../services/DataManager";
+import { useWaterLevelStore } from "../../stores/useWaterLevelStore";
+import { CombinedData, TimeSpan } from "../../types/timeSeriesTypes";
 import { filterTimeSeries } from "../../utils/timeSeriesUtils";
 import RainLevelBarChartModal from "./RainLevelBarChartModal/RainLevelBarChartModal";
 import WaterLevelLineChartModal from "./WaterLevelLineChartModal/WaterLevelLineChartModal";
@@ -12,24 +13,34 @@ import WellSummaryModal from "./WellSummaryModal/WellSummaryModal";
 const AllModels: React.FC = () => {
     const [timeSpan, setTimeSpan] = useState<TimeSpan>("1D");
     const [combinedData, setCombinedData] = useState<CombinedData | null>(null);
-    const wellId = "Escondido_5"; // Replace with actual well ID
+    const selectedWellId = useWaterLevelStore((state) => state.selectedWellId);
+    const setCombinedDataStore = useWaterLevelStore(
+        (state) => state.setCombinedData
+    );
 
     useEffect(() => {
+        if (!selectedWellId) return; // Do nothing if no well is selected
+
         const loadData = async () => {
             try {
-                const data = await DataManager.getCombinedData(wellId);
-                console.log("Combined Data:", data);
+                const data = await DataManager.getCombinedData(selectedWellId);
+                console.log(`Combined Data for ${selectedWellId}:`, data);
                 setCombinedData(data);
+                setCombinedDataStore(data); // Optionally store in Zustand
             } catch (error) {
                 console.error("Error loading data:", error);
             }
         };
 
         loadData();
-    }, [wellId]);
+    }, [selectedWellId, setCombinedDataStore]);
+
+    if (!selectedWellId) {
+        return <div>Please select a well from the map.</div>;
+    }
 
     if (!combinedData) {
-        return <div>Loading data...</div>;
+        return <div>Loading data for well {selectedWellId}...</div>;
     }
 
     const filteredWaterData = filterTimeSeries(
@@ -53,8 +64,9 @@ const AllModels: React.FC = () => {
                 className="flex flex-col space-y-4"
             >
                 <WellSummaryModal
-                    title="Escondido Well"
-                    coordinates={[`34°29'0.22" N`, `120°26'23.20" W`]}
+                    title={`Well ${selectedWellId}`}
+                    coordinates={[`34°29'0.22" N`, `120°26'23.20" W`]} // Update coordinates based on well data
+                    // You might want to pass additional props like well location, description, etc.
                 />
                 <div
                     id="water-level-visualization-modal-container"
@@ -93,7 +105,6 @@ const AllModels: React.FC = () => {
                                 type: "sedimentary-fine-grained", // "Consolidated: Fine grained (shale)"
                             },
                         ]}
-                        maxDepth={340}
                     />
                 </div>
             </div>
