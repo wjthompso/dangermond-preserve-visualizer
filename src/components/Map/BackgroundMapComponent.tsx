@@ -41,8 +41,8 @@ const MapComponent: React.FC = () => {
             bearing: 0, // Ensure no rotation, keeps the map flat
         });
 
-        // Add navigation controls (optional)
-        map.addControl(new maplibreGl.NavigationControl());
+        // Add navigation controls (optional), but place the controls in the top-left corner
+        map.addControl(new maplibreGl.NavigationControl(), "top-left");
 
         // Add markers to the map
         wells.forEach((well) => {
