@@ -153,7 +153,7 @@ const WaterLevelLineChartModal: React.FC<WaterLevelLineChartModalProps> = ({
     );
 
     const handleChartReady = (chart: echarts.ECharts) => {
-        chartRef.current = chart;
+        (chartRef as React.MutableRefObject<any>).current = chart;
     };
 
     const updateWaterLevelAndDate = (xIndex: number) => {

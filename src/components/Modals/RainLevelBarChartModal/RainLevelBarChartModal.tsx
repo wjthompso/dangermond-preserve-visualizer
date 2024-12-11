@@ -161,7 +161,7 @@ const RainLevelBarChartModal: React.FC<RainLevelBarChartModalProps> = ({
     }, [rainData, timeSpan]);
 
     const handleChartReady = (chart: echarts.ECharts) => {
-        chartRef.current = chart;
+        (chartRef as React.MutableRefObject<any>).current = chart;
     };
 
     // Subscribe to hoveredAxisIndex changes and update this chart accordingly
