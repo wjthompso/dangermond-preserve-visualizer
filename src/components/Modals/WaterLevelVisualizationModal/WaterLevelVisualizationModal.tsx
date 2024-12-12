@@ -318,7 +318,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({ layers }) => {
                                 style={{
                                     flexGrow: heightFraction,
                                     backgroundImage:
-                                        "url('/assets/rock-texture-semi-transparent-overlay.png')",
+                                        "url('assets/rock-texture-semi-transparent-overlay.png')",
                                     backgroundSize: "cover",
                                     backgroundBlendMode: "overlay",
                                     outline:
