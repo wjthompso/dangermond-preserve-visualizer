@@ -3,13 +3,13 @@
     "version": "0.0.0",
     "scripts": {
         "dev": "vite",
-        "build": "tsc && vite build",
+        "build": "NODE_ENV=production tsc && vite build",
         "serve": "vite preview --port 3000",
+        "deploy": "gh-pages -d dist",
+        "predeploy": "npm run build",
         "lint": "eslint . --ext .ts,.tsx,.js",
         "prepare": "husky install",
-        "test": "vitest",
-        "predeploy": "npm run build",
-        "deploy": "gh-pages -d build"
+        "test": "vitest"
     },
     "dependencies": {
         "echarts": "^5.5.1",
