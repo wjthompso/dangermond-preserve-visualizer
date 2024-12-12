@@ -1,0 +1,38 @@
+{
+    "coordinates": {
+        "latitude": 34.5399037605087,
+        "longitude": -120.453132886696
+    },
+    "layers": [
+        {
+            "startDepth": 0,
+            "endDepth": 3,
+            "type": "unconsolidated-coarse-and-fine-grained"
+        },
+        {
+            "startDepth": 3,
+            "endDepth": 9,
+            "type": "sedimentary-fine-grained"
+        },
+        {
+            "startDepth": 9,
+            "endDepth": 14,
+            "type": "sedimentary-fine-grained"
+        },
+        {
+            "startDepth": 14,
+            "endDepth": 22,
+            "type": "sedimentary-fine-grained"
+        },
+        {
+            "startDepth": 22,
+            "endDepth": 29,
+            "type": "unconsolidated-fine-grained"
+        },
+        {
+            "startDepth": 29,
+            "endDepth": 340,
+            "type": "sedimentary-fine-grained"
+        }
+    ]
+}
