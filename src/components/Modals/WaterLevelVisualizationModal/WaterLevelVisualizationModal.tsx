@@ -334,7 +334,7 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({ layers }) => {
             </div>
 
             {/* Legend */}
-            <div className="flex flex-col w-[180px] space-y-4 -mt-2 ml-2">
+            <div className="flex flex-col w-[185px] space-y-4 -mt-2 ml-2">
                 {Object.entries(groupedLegend).map(([group, items]) => (
                     <div
                         key={group}

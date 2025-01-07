@@ -35,7 +35,7 @@ const WellSummaryModal: React.FC<WellSummaryModalProps> = ({
             {/* Title */}
             <div
                 id="well-summary-title"
-                className="text-[1.75rem] font-medium px-6"
+                className="text-[1.75rem] font-medium max-w-[400px] mx-auto px-4 w-full"
             >
                 {title}
             </div>
@@ -49,7 +49,7 @@ const WellSummaryModal: React.FC<WellSummaryModalProps> = ({
             {/* Coordinates */}
             <div
                 id="well-summary-coordinates"
-                className="text-[1.125rem] font-medium text-[#AAAAAA] px-6"
+                className="text-[1.125rem] font-medium text-[#AAAAAA] max-w-[400px] mx-auto px-4 w-full"
             >
                 {formatCoordinates(coordinates.latitude, coordinates.longitude)}
             </div>

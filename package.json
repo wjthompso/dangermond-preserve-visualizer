@@ -12,12 +12,14 @@
         "test": "vitest"
     },
     "dependencies": {
+        "@use-gesture/react": "^10.3.1",
         "echarts": "^5.5.1",
         "echarts-for-react": "^3.0.2",
         "maplibre-gl": "^4.7.1",
         "papaparse": "^5.4.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "react-spring": "^9.7.5",
         "zustand": "^5.0.2"
     },
     "devDependencies": {

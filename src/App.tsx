@@ -4,8 +4,8 @@ import AllModels from "./components/Modals/AllModels";
 
 function App(): ReactElement {
     return (
-        <div className="p-20 border shadow-xl border-gray-50 rounded-xl">
-            <header>
+        <div className="w-screen h-screen border shadow-xl border-gray-50 rounded-xl">
+            <header className="w-full h-full">
                 <BackgroundMapComponent />
                 <AllModels />
             </header>
