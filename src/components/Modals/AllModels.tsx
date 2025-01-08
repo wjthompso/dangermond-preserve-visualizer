@@ -26,7 +26,6 @@ const AllModels: React.FC = () => {
         const loadData = async () => {
             try {
                 const data = await DataManager.getCombinedData(selectedWellId);
-                console.log(`Combined Data for ${selectedWellId}:`, data);
                 setCombinedData(data);
                 setCombinedDataStore(data); // Optionally store in Zustand
             } catch (error) {
@@ -58,10 +57,6 @@ const AllModels: React.FC = () => {
         timeSpan
     );
     const filteredRainData = filterTimeSeries(combinedData.rainLevel, timeSpan);
-
-    // Log filtered data for debugging
-    console.log(`Filtered Water Data (${timeSpan}):`, filteredWaterData);
-    console.log(`Filtered Rain Data (${timeSpan}):`, filteredRainData);
 
     return (
         <>

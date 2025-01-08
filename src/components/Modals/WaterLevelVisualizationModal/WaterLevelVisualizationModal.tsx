@@ -213,7 +213,10 @@ const WellVisualization: React.FC<WellVisualizationProps> = ({ layers }) => {
                                         ? "opacity-10"
                                         : "opacity-100"
                                 }`}
-                                onMouseEnter={() => setHoveredType(layer.type)}
+                                onMouseEnter={() => {
+                                    console.log(layer.type);
+                                    setHoveredType(layer.type);
+                                }}
                                 onMouseLeave={() => setHoveredType(null)}
                                 style={{
                                     flexGrow: heightFraction,
