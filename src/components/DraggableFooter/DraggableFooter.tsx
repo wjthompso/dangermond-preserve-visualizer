@@ -22,7 +22,7 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
     selectedWellId,
 }) => {
     // Height of the part of the component that peeks above the bottom of the screen.
-    const peekHeight = 150;
+    const peekHeight = 500;
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -53,6 +53,8 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
             //     api.start({ y: newY });
             // }
 
+            console.log("newY", newY);
+
             api.start({ y: newY });
         },
         { axis: "y" }
@@ -70,10 +72,17 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
     };
 
     return (
+        // Note: Adjusting the max height of draggable-footer-content will
+        // adjust the maximum height of the component. Since the draggable
+        // footer is absolutely positioned at the bottom, it will expand up
+        // to fill the screen. If you want to leave vertical space for a header,
+        // such that the footer doesn't drag up to cover it, you can adjust
+        // the maxHeight of draggable-footer-content to be less than 100vh
+        // by whatever that amount is.
         <animated.div
             id="draggable-footer"
             // Make sure it's absolutely positioned at the bottom, spanning full width
-            className="absolute inset-x-0 bottom-0 z-50 overflow-hidden text-white border shadow-lg bg-gradient-to-br from-black/70 to-black/50 border-white/20 rounded-t-xl backdrop-blur-md"
+            className="absolute inset-x-0 bottom-0 z-50 overflow-hidden text-white border shadow-lg bg-gradient-to-br from-black/70 to-black/50 border-white/20 rounded-xl backdrop-blur-md"
             // Convert spring y into a translateY. Also limit maxHeight.
             style={{
                 transform: y.to((val) => `translateY(${val}px)`),
@@ -112,7 +121,7 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
                 id="draggable-footer-content"
                 className="pb-4 overflow-y-auto bg-black"
                 style={{
-                    maxHeight: "calc(100vh - 6rem)", // adjust as needed
+                    maxHeight: "calc(100vh - 8.3rem)",
                 }}
             >
                 {/* Example modals/content, just stacked vertically */}
