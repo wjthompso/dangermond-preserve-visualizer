@@ -34,26 +34,26 @@ const MapComponent: React.FC = () => {
         // Initialize maplibre map instance
         const map = new maplibreGl.Map({
             container: mapContainerRef.current,
-            style: "https://api.maptiler.com/maps/hybrid/style.json?key=9NI99sjBP6UPRQHN9Mf7", // Replace with your API key
+            style: "https://api.maptiler.com/maps/hybrid/style.json?key=9NI99sjBP6UPRQHN9Mf7",
             center: [-120.352712, 34.497165], // Initial center
             zoom: 11,
-            pitch: 0, // Force the map to always be 2D by setting pitch to 0
-            bearing: 0, // Ensure no rotation, keeps the map flat
+            pitch: 0, // Force map to 2D
+            bearing: 0, // No rotation
         });
 
-        // Add navigation controls (optional), but place the controls in the top-left corner
+        // Add navigation controls in the top-left corner (optional)
         map.addControl(new maplibreGl.NavigationControl(), "top-left");
 
-        // Add markers to the map
+        // Add markers
         wells.forEach((well) => {
-            const marker = new maplibreGl.Marker({ color: "#FF0000" }) // Customize marker appearance
+            const marker = new maplibreGl.Marker({ color: "#FF0000" })
                 .setLngLat(well.coordinates)
                 .addTo(map);
 
-            // Add hover state to the marker
             const markerElement = marker.getElement();
             markerElement.style.cursor = "pointer";
 
+            // Hover style
             markerElement.addEventListener("mouseenter", () => {
                 markerElement.style.border = "2px solid white";
                 markerElement.style.borderRadius = "8px";
@@ -64,36 +64,32 @@ const MapComponent: React.FC = () => {
                 markerElement.style.borderRadius = "";
             });
 
-            // Add click event to update the selected well ID and adjust map view
+            // Click event
             markerElement.addEventListener("click", () => {
+                // 1) Update store with selected well ID
                 setSelectedWellId(well.id);
 
-                // Calculate the new center with an offset to prevent the marker from being obscured by the sidebar
-                const offsetX = 100; // Shift left by 100 pixels (I think?)
-                const offsetY = 0; // No vertical shift
+                // 2) Determine if we're in desktop or mobile mode
+                const isDesktop = window.innerWidth >= 769;
 
-                // Get the current pixel position of the clicked well
-                const targetPoint = map.project(well.coordinates);
+                // 3) Calculate offsetX (in pixels)
+                //    ~384 px is half of the 769 px sidebar,
+                //    so that the marker is centered on the left portion.
 
-                // Apply the offset
-                const newPoint = [
-                    targetPoint.x + offsetX,
-                    targetPoint.y + offsetY,
-                ];
+                const offsetX = isDesktop ? 384 : 0;
+                const offsetY = 0;
 
-                // Convert the new pixel position back to geographic coordinates
-                const newCenter = map.unproject(newPoint as [number, number]);
-
-                // Fly to the new center position with the desired zoom level
+                // 7) Fly to the new center
                 map.flyTo({
-                    center: newCenter,
+                    center: well.coordinates,
+                    offset: [-offsetX, offsetY],
                     zoom: 13,
-                    essential: true, // This animation is considered essential with respect to prefers-reduced-motion
+                    essential: true,
                 });
             });
         });
 
-        // Clean up on unmount
+        // Cleanup on unmount
         return () => map.remove();
     }, [setSelectedWellId]);
 
