@@ -95,12 +95,14 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
             <div
                 id="draggable-grip"
                 // Attach gesture events here
+                style={{ touchAction: "none" }}
                 {...bind()}
                 className="flex items-center justify-center w-full h-6 bg-black cursor-grab"
             >
                 {/* A little “grip bar” or handle */}
                 <div
                     {...bind()}
+                    style={{ touchAction: "none" }}
                     className="w-12 h-1 rounded-full bg-white/40"
                 />
             </div>
