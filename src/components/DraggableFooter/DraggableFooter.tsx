@@ -1,6 +1,7 @@
 import { animated, useSpring } from "@react-spring/web";
 import { useDrag } from "@use-gesture/react";
 import React, { useState } from "react";
+import ExpandIcon from "../../../public/assets/ExpandIcon.svg";
 import { CombinedData, TimeSpan } from "../../types/timeSeriesTypes";
 import { filterTimeSeries } from "../../utils/timeSeriesUtils";
 import RainLevelBarChartModal from "../Modals/RainLevelBarChartModal/RainLevelBarChartModal";
@@ -38,9 +39,10 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
             const maxY = window.innerHeight - peekHeight;
             const newY = Math.min(Math.max(oy, minY), maxY);
 
-            // If user finishes the gesture (last === true), snap to either expanded or collapsed
+            // If user finishes the gesture (last === true), you can decide whether to auto-snap
+            // or just stay where the user left it. Currently, we just stay.
+            // If you want auto snapping again, uncomment below:
             // if (last) {
-            //     // Decide whether to expand or collapse based on how far they've dragged
             //     if (newY < maxY / 2) {
             //         setIsExpanded(true);
             //         api.start({ y: 0 });
@@ -49,11 +51,8 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
             //         api.start({ y: maxY });
             //     }
             // } else {
-            //     // While dragging, just follow the user
             //     api.start({ y: newY });
             // }
-
-            console.log("newY", newY);
 
             api.start({ y: newY });
         },
@@ -72,51 +71,53 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
     };
 
     return (
-        // Note: Adjusting the max height of draggable-footer-content will
-        // adjust the maximum height of the component. Since the draggable
-        // footer is absolutely positioned at the bottom, it will expand up
-        // to fill the screen. If you want to leave vertical space for a header,
-        // such that the footer doesn't drag up to cover it, you can adjust
-        // the maxHeight of draggable-footer-content to be less than 100vh
-        // by whatever that amount is.
         <animated.div
             id="draggable-footer"
-            // Make sure it's absolutely positioned at the bottom, spanning full width
             className="absolute inset-x-0 bottom-0 z-50 overflow-hidden text-white border shadow-lg bg-gradient-to-br from-black/70 to-black/50 border-white/20 rounded-xl backdrop-blur-md"
-            // Convert spring y into a translateY. Also limit maxHeight.
             style={{
                 transform: y.to((val) => `translateY(${val}px)`),
-                maxHeight: "100vh", // ensures we never exceed the screen
-                touchAction: "none", // Required so gesture can pick up pointer events properly
+                maxHeight: "100vh",
+                touchAction: "none",
             }}
         >
-            {/* Uncomment and adjust the toggle button if needed
+            {/* 
+                1. The "toggle" button in the top-right corner.
+                2. You can swap the "v" for any icon/emoji/character you prefer.
+                3. isExpanded ? ... : ... 
+                   Pick whichever symbols make sense for open vs. closed states.
+            */}
             <button
                 id="draggable-footer-toggle"
-                className="absolute z-10 p-2 text-black bg-gray-300 rounded-full top-2 left-2"
+                className="absolute z-10 p-1 text-black bg-[rgb(88,88,88)] rounded-full top-[10px] right-[10px]"
                 onClick={toggleExpand}
+                style={{
+                    transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
+                }}
             >
-                {isExpanded ? "▼" : "▲"}
-            </button> 
-            */}
+                <img
+                    src={ExpandIcon}
+                    alt="Expand Icon"
+                />
+            </button>
 
-            {/* The area we drag from; you can also attach the bind to the entire container if you prefer. */}
+            {/* 
+                The draggable grip at the top. 
+                Note: If you want the entire top area (including the toggle button) 
+                to be draggable, place {...bind()} on a parent element or wrap them together.
+            */}
             <div
                 id="draggable-grip"
-                // Attach gesture events here
                 style={{ touchAction: "none" }}
                 {...bind()}
                 className="flex items-center justify-center w-full h-6 bg-black cursor-grab"
             >
-                {/* A little “grip bar” or handle */}
                 <div
-                    {...bind()}
-                    style={{ touchAction: "none" }}
                     className="w-12 h-1 rounded-full bg-white/40"
+                    style={{ touchAction: "none" }}
                 />
             </div>
 
-            {/* The main content area. Set overflow-y-auto & a max-h so it scrolls if too tall. */}
+            {/* Main content area */}
             <div
                 id="draggable-footer-content"
                 className="pb-4 overflow-y-auto bg-black"
@@ -124,7 +125,6 @@ const DraggableFooter: React.FC<DraggableFooterProps> = ({
                     maxHeight: "calc(100vh - 8.3rem)",
                 }}
             >
-                {/* Example modals/content, just stacked vertically */}
                 <WellSummaryModalMobile
                     title={`${selectedWellId}`.replace("_", " ")}
                     coordinates={combinedData.coordinates}
